@@ -41,24 +41,37 @@ STYLE_TYPES = frozenset({TYPE_PARTNER_STYLE, TYPE_COMMANDER_STYLE, TYPE_COMMANDE
 
 BOX_FREE_TYPES = frozenset({TYPE_ALLY_FINISHER, TYPE_NO_CASUALTIES})
 
-ANCHORED_TYPES = frozenset({TYPE_THEME, TYPE_ALLY_FINISHER, TYPE_NO_CASUALTIES,
-                            TYPE_COMMANDER_STYLE_ALL})
+ANCHORED_TYPES = frozenset({TYPE_THEME, TYPE_ALLY_FINISHER, TYPE_NO_CASUALTIES, TYPE_COMMANDER_STYLE_ALL})
 
 ALLY_FINISHER_SHARE = 0.10
 MIN_ALLY_FINISHER_CHECKS = 1
 
-BOSS_CHAPTERS = frozenset(
-    c for c, rows in SPAWNS.items()
-    if any(spawn.cell in BOSS_ADDRS for spawn in rows)
+BOSS_CHAPTERS = frozenset(c for c, rows in SPAWNS.items() if any(spawn.cell in BOSS_ADDRS for spawn in rows))
+
+TRIBE_ORDER = (
+    "Air",
+    "Angel",
+    "Bug",
+    "Death",
+    "Demon",
+    "Dragon",
+    "Fortress",
+    "Girl",
+    "Gun",
+    "Hero",
+    "Idol",
+    "Knight",
+    "Knuckle",
+    "Machine",
+    "Musha",
+    "Ninja",
+    "Nurse",
+    "Tank",
+    "Wing",
+    "Wizard",
 )
 
-TRIBE_ORDER = ("Air", "Angel", "Bug", "Death", "Demon", "Dragon",
-               "Fortress", "Girl", "Gun", "Hero", "Idol", "Knight",
-               "Knuckle", "Machine", "Musha", "Ninja", "Nurse",
-               "Tank", "Wing", "Wizard")
-
-FARMABLE = frozenset(borg_id for borg_id, register in GACHA_REGISTERS.items()
-                     if register.thresholds[0] >= 0)
+FARMABLE = frozenset(borg_id for borg_id, register in GACHA_REGISTERS.items() if register.thresholds[0] >= 0)
 
 DISTRIBUTABLE = frozenset(set(BORGS) - NEVER_IN_POOL)
 
@@ -118,8 +131,9 @@ class _Plan:
     def __post_init__(self) -> None:
         self.chapter_set = set(self.chapters)
         self.owned_tribes = {TRIBES.get(self.starting_borg)} | {TRIBES.get(b) for b in self.box_borgs}
-        self.guaranteed = ({} if self.gacha_on
-                           else {c: guaranteed_farmable_borgs(c, self.assignments) for c in self.chapters})
+        self.guaranteed = (
+            {} if self.gacha_on else {c: guaranteed_farmable_borgs(c, self.assignments) for c in self.chapters}
+        )
         self.farm_tribes = {TRIBES[i] for ids in self.guaranteed.values() for i in ids}
 
     def ownable(self, tribes: Sequence[str]) -> bool:
@@ -130,9 +144,9 @@ class _Plan:
         return bool(set(tribes) & self.farm_tribes)
 
     def deliverable_borgs(self, tribe: str | None = None) -> list[int]:
-        return sorted(b for b in DISTRIBUTABLE
-                      if (tribe is None or TRIBES.get(b) == tribe)
-                      and not self.from_start_or_box(b))
+        return sorted(
+            b for b in DISTRIBUTABLE if (tribe is None or TRIBES.get(b) == tribe) and not self.from_start_or_box(b)
+        )
 
     def from_start_or_box(self, borg_id: int) -> bool:
         return borg_id == self.starting_borg or borg_id in self.box_borgs
@@ -154,12 +168,9 @@ def canonical_tribes(values: Iterable[str]) -> tuple[str, ...]:
     return tuple(t for t in TRIBE_ORDER if t.casefold() in wanted)
 
 
-def farm_chapters(tribes: Sequence[str], chapters: Iterable[int],
-                  assignments: Mapping[int, int | None]) -> list[int]:
+def farm_chapters(tribes: Sequence[str], chapters: Iterable[int], assignments: Mapping[int, int | None]) -> list[int]:
     wanted = set(tribes)
-    return sorted(c for c in chapters
-                  if any(TRIBES[i] in wanted
-                         for i in guaranteed_farmable_borgs(c, assignments)))
+    return sorted(c for c in chapters if any(TRIBES[i] in wanted for i in guaranteed_farmable_borgs(c, assignments)))
 
 
 def guaranteed_farmable_borgs(chapter: int, assignments: Mapping[int, int | None]) -> frozenset[int]:
@@ -171,21 +182,17 @@ def guaranteed_farmable_borgs(chapter: int, assignments: Mapping[int, int | None
                 out.add(borg_id)
         elif spawn.choices:
             tribes = {TRIBES.get(o) for o in spawn.choices}
-            if (len(tribes) == 1 and None not in tribes
-                    and all(o in FARMABLE for o in spawn.choices)):
+            if len(tribes) == 1 and None not in tribes and all(o in FARMABLE for o in spawn.choices):
                 out.update(spawn.choices)
     return frozenset(out)
 
 
-def tribe_force_witnesses(tribe: str, starting_borg: int,
-                          box_borgs: Sequence[int],
-                          achievement_borgs: Sequence[int],
-                          min_cost: int) -> tuple[int, ...]:
+def tribe_force_witnesses(
+    tribe: str, starting_borg: int, box_borgs: Sequence[int], achievement_borgs: Sequence[int], min_cost: int
+) -> tuple[int, ...]:
     base = owned_tribe_cost(tribe, starting_borg, box_borgs)
     witnesses: list[int] = []
-    candidates = sorted((b for b in achievement_borgs
-                         if TRIBES.get(b) == tribe),
-                        key=lambda b: (-BORGS[b].cost, b))
+    candidates = sorted((b for b in achievement_borgs if TRIBES.get(b) == tribe), key=lambda b: (-BORGS[b].cost, b))
     for borg in candidates:
         if base >= min_cost:
             break
@@ -204,19 +211,21 @@ def owned_tribe_cost(tribe: str, starting_borg: int, box_borgs: Sequence[int]) -
     return total
 
 
-def tribe_force_witness_chapters(tribe: str, chapters: Iterable[int],
-                                 assignments: Mapping[int, int | None],
-                                 starting_borg: int,
-                                 box_borgs: Sequence[int],
-                                 min_cost: int) -> tuple[int, ...]:
+def tribe_force_witness_chapters(
+    tribe: str,
+    chapters: Iterable[int],
+    assignments: Mapping[int, int | None],
+    starting_borg: int,
+    box_borgs: Sequence[int],
+    min_cost: int,
+) -> tuple[int, ...]:
     total = owned_tribe_cost(tribe, starting_borg, box_borgs)
     seen: set[int] = set()
     witnesses: list[int] = []
     for chapter in _chapters_by_sphere(chapters):
         if total >= min_cost:
             break
-        new_ids = {i for i in guaranteed_farmable_borgs(chapter, assignments)
-                   if TRIBES[i] == tribe and i not in seen}
+        new_ids = {i for i in guaranteed_farmable_borgs(chapter, assignments) if TRIBES[i] == tribe and i not in seen}
         if not new_ids:
             continue
         seen |= new_ids
@@ -229,19 +238,34 @@ def _chapters_by_sphere(chapters: Iterable[int]) -> list[int]:
     return sorted(chapters, key=lambda c: (CHAPTERS[c].sphere, c))
 
 
-def plan_achievements(types: Iterable[str], gacha_on: bool, min_cost: int,
-                      pool: Sequence[int],
-                      assignments: Mapping[int, int | None],
-                      starting_borg: int, box_borgs: Sequence[int],
-                      rng: random.Random | None = None,
-                      forced_borgs: Sequence[int] = (),
-                      forced_ally_caps: Sequence[int] = (),
-                      tribes: Iterable[str] | None = None) -> AchievementPlan:
+def plan_achievements(
+    types: Iterable[str],
+    gacha_on: bool,
+    min_cost: int,
+    pool: Sequence[int],
+    assignments: Mapping[int, int | None],
+    starting_borg: int,
+    box_borgs: Sequence[int],
+    rng: random.Random | None = None,
+    forced_borgs: Sequence[int] = (),
+    forced_ally_caps: Sequence[int] = (),
+    tribes: Iterable[str] | None = None,
+) -> AchievementPlan:
     active = frozenset(types) & ALL_TYPES
     if not active:
         return EMPTY_PLAN
-    plan = _Plan(gacha_on, min_cost, list(pool), assignments, starting_borg, box_borgs,
-                 rng, forced_borgs, forced_ally_caps, tribes)
+    plan = _Plan(
+        gacha_on,
+        min_cost,
+        list(pool),
+        assignments,
+        starting_borg,
+        box_borgs,
+        rng,
+        forced_borgs,
+        forced_ally_caps,
+        tribes,
+    )
     specs: list[Spec] = []
     for kind in SPEC_ORDER:
         if kind in active:
@@ -254,8 +278,11 @@ def plan_achievements(types: Iterable[str], gacha_on: bool, min_cost: int,
 
 
 def _partner_style_specs(plan: _Plan) -> list[Spec]:
-    return [CommanderSpec(TYPE_PARTNER_STYLE, k) for k in sorted(STYLES)
-            if deployable_chapters(k, plan.chapters) and plan.ownable(STYLES[k])]
+    return [
+        CommanderSpec(TYPE_PARTNER_STYLE, k)
+        for k in sorted(STYLES)
+        if deployable_chapters(k, plan.chapters) and plan.ownable(STYLES[k])
+    ]
 
 
 def deployable_chapters(commander: int, chapters: Iterable[int]) -> list[int]:
@@ -270,8 +297,11 @@ def _deployable(chapter: int, commander: int) -> bool:
 
 
 def _commander_style_specs(plan: _Plan) -> list[Spec]:
-    return [CommanderSpec(TYPE_COMMANDER_STYLE, k) for k in sorted(STYLES)
-            if rival_chapters(k, plan.chapters) and plan.ownable(STYLES[k])]
+    return [
+        CommanderSpec(TYPE_COMMANDER_STYLE, k)
+        for k in sorted(STYLES)
+        if rival_chapters(k, plan.chapters) and plan.ownable(STYLES[k])
+    ]
 
 
 def rival_chapters(commander: int, chapters: Iterable[int]) -> list[int]:
@@ -279,20 +309,28 @@ def rival_chapters(commander: int, chapters: Iterable[int]) -> list[int]:
 
 
 def _commander_style_all_specs(plan: _Plan) -> list[Spec]:
-    return [CommanderChapterSpec(TYPE_COMMANDER_STYLE_ALL, k, c)
-            for c in sorted(plan.chapter_set)
-            for k in CHAPTERS[c].antagonists
-            if plan.ownable(STYLES[k])]
+    return [
+        CommanderChapterSpec(TYPE_COMMANDER_STYLE_ALL, k, c)
+        for c in sorted(plan.chapter_set)
+        for k in CHAPTERS[c].antagonists
+        if plan.ownable(STYLES[k])
+    ]
 
 
 def _theme_specs(plan: _Plan) -> list[Spec]:
-    return [ChapterSpec(TYPE_THEME, c) for c in sorted(THEME_CHAPTERS)
-            if c in plan.chapter_set and plan.ownable((THEME_CHAPTERS[c],))]
+    return [
+        ChapterSpec(TYPE_THEME, c)
+        for c in sorted(THEME_CHAPTERS)
+        if c in plan.chapter_set and plan.ownable((THEME_CHAPTERS[c],))
+    ]
 
 
 def _ace_duel_specs(plan: _Plan) -> list[Spec]:
-    return [CommanderSpec(TYPE_ACE_DUEL, k) for k in sorted(SIGNATURE_BORGS)
-            if rival_chapters(k, plan.chapters) and _ace_reachable(plan, SIGNATURE_BORGS[k])]
+    return [
+        CommanderSpec(TYPE_ACE_DUEL, k)
+        for k in sorted(SIGNATURE_BORGS)
+        if rival_chapters(k, plan.chapters) and _ace_reachable(plan, SIGNATURE_BORGS[k])
+    ]
 
 
 def _ace_reachable(plan: _Plan, ace: int) -> bool:
@@ -303,16 +341,14 @@ def _ace_reachable(plan: _Plan, ace: int) -> bool:
     return bool(chapters_with_id(ace, plan.chapters, plan.assignments))
 
 
-def chapters_with_id(borg_id: int, chapters: Iterable[int],
-                     assignments: Mapping[int, int | None]) -> list[int]:
-    return sorted(c for c in chapters
-                  if borg_id in guaranteed_farmable_borgs(c, assignments))
+def chapters_with_id(borg_id: int, chapters: Iterable[int], assignments: Mapping[int, int | None]) -> list[int]:
+    return sorted(c for c in chapters if borg_id in guaranteed_farmable_borgs(c, assignments))
 
 
 def _ally_finisher_specs(plan: _Plan) -> list[Spec]:
-    eligible = sorted(c for c in plan.chapter_set
-                      if CHAPTERS[c].partner_mode == PARTNER_CHOICE
-                      and c not in BOSS_CHAPTERS)
+    eligible = sorted(
+        c for c in plan.chapter_set if CHAPTERS[c].partner_mode == PARTNER_CHOICE and c not in BOSS_CHAPTERS
+    )
     if plan.forced_ally_chapters:
         sample = sorted(set(plan.forced_ally_chapters) & set(eligible))
     elif plan.rng is not None and eligible:
@@ -324,13 +360,15 @@ def _ally_finisher_specs(plan: _Plan) -> list[Spec]:
 
 
 def _no_casualties_specs(plan: _Plan) -> list[Spec]:
-    return [ChapterSpec(TYPE_NO_CASUALTIES, c) for c in NO_CASUALTIES_CHAPTERS
-            if c in plan.chapter_set and _has_vanilla_enemies(c, plan.assignments)]
+    return [
+        ChapterSpec(TYPE_NO_CASUALTIES, c)
+        for c in NO_CASUALTIES_CHAPTERS
+        if c in plan.chapter_set and _has_vanilla_enemies(c, plan.assignments)
+    ]
 
 
 def _has_vanilla_enemies(chapter: int, assignments: Mapping[int, int | None]) -> bool:
-    return all(spawn.cell not in assignments
-               for spawn in SPAWNS.get(chapter, ()))
+    return all(spawn.cell not in assignments for spawn in SPAWNS.get(chapter, ()))
 
 
 def _tribe_force_specs(plan: _Plan) -> list[Spec]:
@@ -339,8 +377,7 @@ def _tribe_force_specs(plan: _Plan) -> list[Spec]:
 
 def _viable_tribes(plan: _Plan) -> list[str]:
     allowed = set(TRIBE_ORDER) if plan.tribes is None else set(plan.tribes)
-    return [t for t in TRIBE_ORDER
-            if t in allowed and _tribe_reachable_cost(plan, t) >= plan.min_cost]
+    return [t for t in TRIBE_ORDER if t in allowed and _tribe_reachable_cost(plan, t) >= plan.min_cost]
 
 
 def _tribe_reachable_cost(plan: _Plan, tribe: str) -> int:
@@ -363,8 +400,7 @@ _SPECS_OF: dict[str, Callable[[_Plan], list[Spec]]] = {
 }
 
 
-def _draw_witnesses(plan: _Plan, rng: random.Random,
-                    specs: Sequence[Spec], tribes: Sequence[str]) -> set[int]:
+def _draw_witnesses(plan: _Plan, rng: random.Random, specs: Sequence[Spec], tribes: Sequence[str]) -> set[int]:
     chosen: set[int] = set()
 
     def cover(wanted_tribes: Sequence[str]) -> None:
@@ -375,9 +411,7 @@ def _draw_witnesses(plan: _Plan, rng: random.Random,
             return
         matching = [b for b in plan.deliverable_borgs() if TRIBES.get(b) in wanted]
         if not matching:
-            raise OptionError(
-                f"achievements: no distributable candidate for {wanted_tribes}"
-            )
+            raise OptionError(f"achievements: no distributable candidate for {wanted_tribes}")
         chosen.add(rng.choice(matching))
 
     for spec in specs:
@@ -395,40 +429,48 @@ def _draw_witnesses(plan: _Plan, rng: random.Random,
         while base < plan.min_cost:
             candidates = [b for b in plan.deliverable_borgs(tribe) if b not in chosen]
             if not candidates:
-                raise OptionError(
-                    f"achievements: tribe {tribe} does not cover {plan.min_cost}"
-                )
+                raise OptionError(f"achievements: tribe {tribe} does not cover {plan.min_cost}")
             borg = rng.choice(candidates)
             chosen.add(borg)
             base += BORGS[borg].cost
     return chosen
 
 
-def achievements_met(specs: Iterable[Spec], chapter: int, partner: int,
-                     force_ids: Sequence[int], force_cost: int,
-                     min_cost: int,
-                     finisher_slot: int | None = None,
-                     own_losses: int | None = None) -> list[Spec]:
-    outcome = BattleOutcome(chapter, partner, force_ids,
-                            {TRIBES[i] for i in force_ids if i in TRIBES},
-                            force_cost, min_cost, finisher_slot, own_losses)
-    return [spec for spec in specs
-            if spec[0] in _MET and _MET[spec[0]](outcome, as_spec(spec))]
+def achievements_met(
+    specs: Iterable[Spec],
+    chapter: int,
+    partner: int,
+    force_ids: Sequence[int],
+    force_cost: int,
+    min_cost: int,
+    finisher_slot: int | None = None,
+    own_losses: int | None = None,
+) -> list[Spec]:
+    outcome = BattleOutcome(
+        chapter,
+        partner,
+        force_ids,
+        {TRIBES[i] for i in force_ids if i in TRIBES},
+        force_cost,
+        min_cost,
+        finisher_slot,
+        own_losses,
+    )
+    return [spec for spec in specs if spec[0] in _MET and _MET[spec[0]](outcome, as_spec(spec))]
 
 
 def _met_partner_style(outcome: BattleOutcome, spec: CommanderSpec) -> bool:
-    return (outcome.partner == spec.commander
-            and bool(outcome.force_tribes & set(STYLES[spec.commander])))
+    return outcome.partner == spec.commander and bool(outcome.force_tribes & set(STYLES[spec.commander]))
 
 
 def _met_commander_style(outcome: BattleOutcome, spec: CommanderSpec) -> bool:
-    return (spec.commander in CHAPTERS[outcome.chapter].antagonists
-            and bool(outcome.force_tribes & set(STYLES[spec.commander])))
+    return spec.commander in CHAPTERS[outcome.chapter].antagonists and bool(
+        outcome.force_tribes & set(STYLES[spec.commander])
+    )
 
 
 def _met_commander_style_all(outcome: BattleOutcome, spec: CommanderChapterSpec) -> bool:
-    return (outcome.chapter == spec.chapter
-            and bool(outcome.force_tribes & set(STYLES[spec.commander])))
+    return outcome.chapter == spec.chapter and bool(outcome.force_tribes & set(STYLES[spec.commander]))
 
 
 def _met_theme(outcome: BattleOutcome, spec: ChapterSpec) -> bool:
@@ -436,8 +478,7 @@ def _met_theme(outcome: BattleOutcome, spec: ChapterSpec) -> bool:
 
 
 def _met_tribe_force(outcome: BattleOutcome, spec: TribeSpec) -> bool:
-    return (bool(outcome.force_ids) and outcome.force_tribes == {spec.tribe}
-            and outcome.force_cost >= outcome.min_cost)
+    return bool(outcome.force_ids) and outcome.force_tribes == {spec.tribe} and outcome.force_cost >= outcome.min_cost
 
 
 def _met_ally_finisher(outcome: BattleOutcome, spec: ChapterSpec) -> bool:
@@ -449,8 +490,9 @@ def _met_no_casualties(outcome: BattleOutcome, spec: ChapterSpec) -> bool:
 
 
 def _met_ace_duel(outcome: BattleOutcome, spec: CommanderSpec) -> bool:
-    return (spec.commander in CHAPTERS[outcome.chapter].antagonists
-            and SIGNATURE_BORGS[spec.commander] in outcome.force_ids)
+    return (
+        spec.commander in CHAPTERS[outcome.chapter].antagonists and SIGNATURE_BORGS[spec.commander] in outcome.force_ids
+    )
 
 
 _MET: dict[str, Callable[[BattleOutcome, Any], bool]] = {

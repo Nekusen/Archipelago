@@ -41,10 +41,12 @@ PATCH_OLD: Final = "old"
 PATCH_NONE: Final = "none"
 
 _MSG_DAMAGED = "The ISO file appears truncated or damaged."
-_MSG_UNEXPECTED = ("The game data inside this ISO is not what the "
-                   "patcher expects (maybe another mod or patch was "
-                   "applied first). Please start from a clean, "
-                   "unmodified USA ISO.")
+_MSG_UNEXPECTED = (
+    "The game data inside this ISO is not what the "
+    "patcher expects (maybe another mod or patch was "
+    "applied first). Please start from a clean, "
+    "unmodified USA ISO."
+)
 
 
 class IsoPatchError(Exception):
@@ -91,16 +93,13 @@ def patch_iso(src: str, dst: str | None = None) -> str:
     new_fst_offset = _align(disc.dol_offset + len(new_dol))
     if new_fst_offset + disc.fst_size > _first_file_offset(disc.fst):
         raise IsoPatchError(
-            "Unexpected disc layout: there is no room for the patch. "
-            "Please use a clean, unmodified USA ISO."
+            "Unexpected disc layout: there is no room for the patch. Please use a clean, unmodified USA ISO."
         )
     if dst is None:
         dst = default_output(src)
-    if (os.path.normcase(os.path.abspath(dst))
-            == os.path.normcase(os.path.abspath(src))):
+    if os.path.normcase(os.path.abspath(dst)) == os.path.normcase(os.path.abspath(src)):
         raise IsoPatchError(
-            "The output file would overwrite the ISO you selected. "
-            "Please choose a different output name."
+            "The output file would overwrite the ISO you selected. Please choose a different output name."
         )
     _write_patched_copy(src, dst, disc, new_dol, new_fst_offset)
     if not verify_iso(dst):
@@ -118,10 +117,8 @@ def _read_disc(src: str) -> Disc:
         with open(src, "rb") as f:
             boot = f.read(BOOT_LEN)
             if len(boot) < BOOT_LEN:
-                raise IsoPatchError(
-                    "This file is too small to be a GameCube ISO."
-                )
-            game_id = boot[:len(dol_patch.GAME_ID)]
+                raise IsoPatchError("This file is too small to be a GameCube ISO.")
+            game_id = boot[: len(dol_patch.GAME_ID)]
             if game_id != dol_patch.GAME_ID:
                 raise IsoPatchError(
                     f"This does not look like the USA version of Gotcha "
@@ -152,9 +149,11 @@ def _dol_size(header: bytes) -> int:
 
 
 def _dol_header(header: bytes) -> DolHeader:
-    return DolHeader(SECTION_TABLE.unpack_from(header, DOL_OFFSETS),
-                     SECTION_TABLE.unpack_from(header, DOL_ADDRESSES),
-                     SECTION_TABLE.unpack_from(header, DOL_SIZES))
+    return DolHeader(
+        SECTION_TABLE.unpack_from(header, DOL_OFFSETS),
+        SECTION_TABLE.unpack_from(header, DOL_ADDRESSES),
+        SECTION_TABLE.unpack_from(header, DOL_SIZES),
+    )
 
 
 def _build_dol(dol: bytes) -> bytes:
@@ -205,10 +204,12 @@ def _dol_patch_state(dol: bytes) -> str:
         return DOL_VANILLA
     if word != dol_patch.MARKER_HOOK_PATCHED:
         return DOL_UNEXPECTED
-    offset, address, size = (sections.offsets[dol_patch.FREE_SECTION],
-                             sections.addresses[dol_patch.FREE_SECTION],
-                             sections.sizes[dol_patch.FREE_SECTION])
-    if address != dol_patch.LOAD_ADDR or size != len(dol_patch.ZONE) or dol[offset:offset + size] != dol_patch.ZONE:
+    offset, address, size = (
+        sections.offsets[dol_patch.FREE_SECTION],
+        sections.addresses[dol_patch.FREE_SECTION],
+        sections.sizes[dol_patch.FREE_SECTION],
+    )
+    if address != dol_patch.LOAD_ADDR or size != len(dol_patch.ZONE) or dol[offset : offset + size] != dol_patch.ZONE:
         return DOL_OLD
     for patch_address, _vanilla, patched in dol_patch.OTHER_HOOK_WORDS:
         patch_offset = _file_offset_of_ram_address(dol, patch_address)
@@ -218,7 +219,8 @@ def _dol_patch_state(dol: bytes) -> str:
 
 
 def _read_word(data: bytes, offset: int) -> int:
-    return int.from_bytes(data[offset:offset + WORD_SIZE], "big")
+    return int.from_bytes(data[offset : offset + WORD_SIZE], "big")
+
 
 def _file_offset_of_ram_address(header: bytes, address: int) -> int | None:
     """Used to find where in the DOL a specific byte in a RAM Address is.
@@ -232,12 +234,14 @@ def _file_offset_of_ram_address(header: bytes, address: int) -> int | None:
             return offset + (address - load_address)
     return None
 
+
 def _marker_hook_file_offset(header: bytes) -> int:
     """Same as _file_offset_of_ram_address, but for our marker hook"""
     offset = _file_offset_of_ram_address(header, dol_patch.MARKER_HOOK_ADDR)
     if offset is None:
         raise IsoPatchError(_MSG_UNEXPECTED)
     return offset
+
 
 def _align(value: int, alignment: int = ALIGN) -> int:
     return (value + alignment - 1) & ~(alignment - 1)
@@ -249,7 +253,7 @@ def _first_file_offset(fst: bytes) -> int:
     entry_count = _read_word(fst, FST_ROOT_ENTRY_COUNT_OFF)
     minimum = None
     for index in range(1, entry_count):
-        entry = fst[index * FST_ENTRY_LEN:(index + 1) * FST_ENTRY_LEN]
+        entry = fst[index * FST_ENTRY_LEN : (index + 1) * FST_ENTRY_LEN]
         if len(entry) < FST_ENTRY_LEN:
             break
         if entry[FST_ENTRY_TYPE_OFF] == FST_FILE_ENTRY:
@@ -284,7 +288,7 @@ def verify_iso(dst: str) -> bool:
     try:
         with open(dst, "rb") as f:
             boot = f.read(BOOT_LEN)
-            if len(boot) < BOOT_LEN or boot[:len(dol_patch.GAME_ID)] != dol_patch.GAME_ID:
+            if len(boot) < BOOT_LEN or boot[: len(dol_patch.GAME_ID)] != dol_patch.GAME_ID:
                 return False
             dol_offset, fst_offset, fst_size, _ = BOOT_RECORD.unpack_from(boot, BOOT_DOL_OFFSET)
             f.seek(dol_offset)
@@ -292,8 +296,9 @@ def verify_iso(dst: str) -> bool:
             if len(header) < DOL_HEADER_LEN:
                 return False
             sections = _dol_header(header)
-            if (sections.addresses[dol_patch.FREE_SECTION] != dol_patch.LOAD_ADDR
-                    or sections.sizes[dol_patch.FREE_SECTION] != len(dol_patch.ZONE)):
+            if sections.addresses[dol_patch.FREE_SECTION] != dol_patch.LOAD_ADDR or sections.sizes[
+                dol_patch.FREE_SECTION
+            ] != len(dol_patch.ZONE):
                 return False
             f.seek(dol_offset + sections.offsets[dol_patch.FREE_SECTION])
             if f.read(sections.sizes[dol_patch.FREE_SECTION]) != dol_patch.ZONE:
@@ -312,9 +317,7 @@ def verify_iso(dst: str) -> bool:
         return False
 
 
-def patch_status_in_memory(
-        read: Callable[[int, int], bytes | None]
-) -> PatchStatus:
+def patch_status_in_memory(read: Callable[[int, int], bytes | None]) -> PatchStatus:
     words: dict[int, bool | None] = {}
     for address, vanilla, patched in ALL_HOOK_WORDS:
         raw = read(address, WORD_SIZE)
@@ -333,7 +336,7 @@ def patch_status_in_memory(
         raw = read(lo, hi - lo)
         if raw is None or len(raw) != hi - lo:
             return PatchStatus(None, words)
-        if raw != dol_patch.ZONE[lo - dol_patch.LOAD_ADDR:hi - dol_patch.LOAD_ADDR]:
+        if raw != dol_patch.ZONE[lo - dol_patch.LOAD_ADDR : hi - dol_patch.LOAD_ADDR]:
             return PatchStatus(PATCH_OLD, words)
     return PatchStatus(PATCH_CURRENT, words)
 

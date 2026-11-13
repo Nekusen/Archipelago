@@ -14,3 +14,6 @@ known-third-party = [
 
 [lint.per-file-ignores]
 "src/*.py" = ["T201"]  # command-line scripts: printing is their job
+
+[format]
+exclude = ["data/*", "src/*"]

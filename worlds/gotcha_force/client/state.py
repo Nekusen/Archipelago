@@ -35,5 +35,4 @@ def client_state_set(key: str, field: str, value: Any) -> None:
         with open(_state_file(), "w", encoding="utf-8") as f:
             json.dump(data, f)
     except OSError as exc:
-        logger.warning(f"could not save the client state to "
-                       f"{_state_file()}: {exc}")
+        logger.warning(f"could not save the client state to {_state_file()}: {exc}")

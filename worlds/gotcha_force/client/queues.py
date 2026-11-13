@@ -43,11 +43,11 @@ class QueueEdit:
         return sum(len(v) for v in self.inserts.values()) - len(self.removes)
 
 
-def queue_with_inserts(queue: bytes, ptr: int,
-                       inserts: Mapping[int, Sequence[Escort]],
-                       removes: Iterable[int] = ()) -> bytes:
+def queue_with_inserts(
+    queue: bytes, ptr: int, inserts: Mapping[int, Sequence[Escort]], removes: Iterable[int] = ()
+) -> bytes:
     record_count = len(queue) // QUEUE_RECORD
-    recs = [queue[i * QUEUE_RECORD:(i + 1) * QUEUE_RECORD] for i in range(record_count)]
+    recs = [queue[i * QUEUE_RECORD : (i + 1) * QUEUE_RECORD] for i in range(record_count)]
 
     def index_of(cell: int) -> int:
         idx, remainder = divmod(cell - QREC_ID - ptr, QUEUE_RECORD)
@@ -71,7 +71,7 @@ def queue_with_inserts(queue: bytes, ptr: int,
         if edit == _INSERT:
             new_records = [escort_record(recs[idx], e) for e in escorts]
             adjust_loops(idx, len(new_records))
-            recs[idx + 1:idx + 1] = new_records
+            recs[idx + 1 : idx + 1] = new_records
         else:
             if recs[idx][QREC_TARGET]:
                 raise ValueError(f"a TARGET is not removed: index {idx}")
@@ -99,8 +99,7 @@ def cell_of(ptr: int, idx: int) -> int:
     return ptr + idx * QUEUE_RECORD + QREC_ID
 
 
-def custom_queue_plan(inserts: Mapping[int, Sequence[Escort]],
-                      removes: Iterable[int] = ()) -> dict[int, QueueEdit]:
+def custom_queue_plan(inserts: Mapping[int, Sequence[Escort]], removes: Iterable[int] = ()) -> dict[int, QueueEdit]:
     out: dict[int, QueueEdit] = {}
     for cell, escorts in inserts.items():
         out.setdefault(enemies.cell_chapter(cell), QueueEdit()).inserts[cell] = tuple(escorts)
@@ -122,8 +121,9 @@ def arena_layout(plan: Mapping[int, QueueEdit]) -> dict[int, int]:
     return out
 
 
-def apply_overrides(blob: bytes, base: int, u16_writes: Mapping[int, int | None],
-                    u8_writes: Mapping[int, int]) -> bytes:
+def apply_overrides(
+    blob: bytes, base: int, u16_writes: Mapping[int, int | None], u8_writes: Mapping[int, int]
+) -> bytes:
     out = bytearray(blob)
     end = base + len(out)
     for addr, value in u16_writes.items():

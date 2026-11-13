@@ -71,6 +71,7 @@ ACHIEVEMENT_NAME_FORMATS: Final = {
 class GotchaForceLocation(Location):
     game = GAME_NAME
 
+
 def _build_table() -> dict[str, int]:
     ids: dict[str, int] = {}
     for chapter in CHECK_CHAPTERS:
@@ -92,8 +93,10 @@ def _build_table() -> dict[str, int]:
     ids.update(_achievement_ids())
     return ids
 
+
 def check_location_name(chapter: int, check_number: int) -> str:
     return f"{CHECK_NAME_PREFIX}{chapter:03d} - Check {check_number}"
+
 
 def gacha_location_name(borg_id: int, piece: int) -> str:
     total = GACHA_REGISTERS[borg_id].pieces
@@ -105,6 +108,7 @@ def gacha_location_name(borg_id: int, piece: int) -> str:
 
 def gacha_whole_location_name(borg_id: int) -> str:
     return GACHA_PREFIX + BORGS[borg_id].name
+
 
 def _achievement_ids() -> dict[str, int]:
     ids: dict[str, int] = {}
@@ -164,17 +168,18 @@ def _spec_labels(spec: Spec) -> dict[str, str]:
 
 
 def _ally_finisher_chapters() -> list[int]:
-    return [chapter for chapter in CHECK_CHAPTERS
-            if CHAPTERS[chapter].partner_mode == PARTNER_CHOICE]
+    return [chapter for chapter in CHECK_CHAPTERS if CHAPTERS[chapter].partner_mode == PARTNER_CHOICE]
 
 
 LOCATION_NAME_TO_ID = _build_table()
+
 
 def _zone_groups() -> dict[str, set[str]]:
     return {
         f"Zone - {zone}": {
             check_location_name(chapter, check_number)
-            for chapter in CHECK_CHAPTERS if CHAPTERS[chapter].tile == tile
+            for chapter in CHECK_CHAPTERS
+            if CHAPTERS[chapter].tile == tile
             for check_number in range(1, CHECKS_PER_CHAPTER + 1)
         }
         for tile, zone in ZONES.items()
@@ -188,12 +193,12 @@ LOCATION_NAME_GROUPS: dict[str, set[str]] = {
     **_zone_groups(),
 }
 
+
 def create_all_locations(world: GotchaForceWorld) -> None:
     region = world.get_region(STORY_MAP_REGION)
     for name in _seed_location_names(world):
-        region.locations.append(GotchaForceLocation(
-            world.player, name, LOCATION_NAME_TO_ID[name], region
-        ))
+        region.locations.append(GotchaForceLocation(world.player, name, LOCATION_NAME_TO_ID[name], region))
+
 
 def _seed_location_names(world: GotchaForceWorld) -> list[str]:
     names: list[str] = []
@@ -209,12 +214,11 @@ def _seed_location_names(world: GotchaForceWorld) -> list[str]:
     names += [achievement_location_name(spec) for spec in world.achievement_plan.specs]
     return names
 
-def starting_spots(world: GotchaForceWorld,
-                   open_chapters: Collection[int]) -> int:
+
+def starting_spots(world: GotchaForceWorld, open_chapters: Collection[int]) -> int:
     opened = set(open_chapters)
     spots = len(opened) * world.options.mission_checks.value
-    spots += sum(1 for reward in pool_rewards(world)
-                 if opened.intersection(reward.triggers))
+    spots += sum(1 for reward in pool_rewards(world) if opened.intersection(reward.triggers))
     whole = gacha_only_one_per_borg(world)
     for borg_id, chapters in world.gacha_chapters.items():
         if opened & chapters:
@@ -224,9 +228,11 @@ def starting_spots(world: GotchaForceWorld,
 
 def pool_rewards(world: GotchaForceWorld) -> list[Reward]:
     chapters = world.chapters_in_pool
-    return [reward._replace(triggers=tuple(c for c in reward.triggers if c in chapters))
-            for reward in REWARDS
-            if any(c in chapters for c in reward.triggers)]
+    return [
+        reward._replace(triggers=tuple(c for c in reward.triggers if c in chapters))
+        for reward in REWARDS
+        if any(c in chapters for c in reward.triggers)
+    ]
 
 
 def gacha_only_one_per_borg(world: GotchaForceWorld) -> bool:
@@ -237,7 +243,4 @@ def gacha_only_one_per_borg(world: GotchaForceWorld) -> bool:
 def gacha_locations_for(borg_id: int, whole: bool) -> list[str]:
     if whole:
         return [gacha_whole_location_name(borg_id)]
-    return [gacha_location_name(borg_id, piece)
-            for piece in range(1, GACHA_REGISTERS[borg_id].pieces + 1)]
-
-
+    return [gacha_location_name(borg_id, piece) for piece in range(1, GACHA_REGISTERS[borg_id].pieces + 1)]

@@ -25,40 +25,36 @@ FORCE_INDICES_FORMAT: Final = f">{addresses.FORCE_INDICES}h"
 
 
 class CollectionStage(Stage):
-
     def __init__(self) -> None:
         self._last_serial_handed = 0
 
-    def _enforce_collection(self, progress: int, ap_state: client_logic.ApState,
-                            slot: client_logic.SlotData) -> None:
+    def _enforce_collection(self, progress: int, ap_state: client_logic.ApState, slot: client_logic.SlotData) -> None:
         save = self._savedata()
         if save is None:
             return
         borg_count = self.dolphin.read_u16(save + addresses.SAVE_N_BORGS) or 0
-        block = self.dolphin.read(save + addresses.SAVE_COLLECTION,
-                                  addresses.COLLECTION_ENTRY * addresses.COLLECTION_SLOTS)
+        block = self.dolphin.read(
+            save + addresses.SAVE_COLLECTION, addresses.COLLECTION_ENTRY * addresses.COLLECTION_SLOTS
+        )
         if block is None:
             return
         ids = self._collection_ids(block)
-        self._replace_new_game_g_red(save, ids, borg_count,
-                                     client_logic.slot_value(slot, slot_keys.STARTING_BORG))
-        desired = client_logic.desired_borgs(
-            ap_state, client_logic.slot_value(slot, slot_keys.BOX_BORGS) or ()
-        )
+        self._replace_new_game_g_red(save, ids, borg_count, client_logic.slot_value(slot, slot_keys.STARTING_BORG))
+        desired = client_logic.desired_borgs(ap_state, client_logic.slot_value(slot, slot_keys.BOX_BORGS) or ())
         self._upgrade_to_neo_g_red(save, ids, desired)
-        self._add_missing_borgs(save, block, ids, borg_count,
-                                [b for b in sorted(desired) if b not in ids])
+        self._add_missing_borgs(save, block, ids, borg_count, [b for b in sorted(desired) if b not in ids])
         self._refresh_force_costs(save, ids)
         self._enforce_fragments(block, ap_state)
         self._apply_xp(save, ids, ap_state)
 
     @staticmethod
     def _collection_ids(block: bytes) -> list[int]:
-        return [struct.unpack_from(">H", block, addresses.COLLECTION_ENTRY * entry)[0]
-                for entry in range(addresses.COLLECTION_SLOTS)]
+        return [
+            struct.unpack_from(">H", block, addresses.COLLECTION_ENTRY * entry)[0]
+            for entry in range(addresses.COLLECTION_SLOTS)
+        ]
 
-    def _replace_new_game_g_red(self, save: int, ids: list[int], borg_count: int,
-                                starting: int) -> None:
+    def _replace_new_game_g_red(self, save: int, ids: list[int], borg_count: int, starting: int) -> None:
         if starting != G_RED and borg_count >= 1 and ids[addresses.NEW_GAME_ENTRY] == G_RED:
             self.dolphin.write_u16(save + addresses.SAVE_COLLECTION, starting)
             ids[addresses.NEW_GAME_ENTRY] = starting
@@ -73,15 +69,13 @@ class CollectionStage(Stage):
         self.dolphin.write_u32(offset + addresses.COLLECTION_EXP_OFF, 0)
         ids[entry] = NEO_G_RED
 
-    def _add_missing_borgs(self, save: int, block: bytes, ids: list[int],
-                           borg_count: int, missing: list[int]) -> None:
+    def _add_missing_borgs(self, save: int, block: bytes, ids: list[int], borg_count: int, missing: list[int]) -> None:
         for borg in missing:
             try:
                 free_slot = ids.index(addresses.NO_ID)
             except ValueError:
                 if borg_count >= addresses.COLLECTION_SLOTS:
-                    logger.warning("Collection full: no room for borg "
-                                   f"{BORGS[borg].name}")
+                    logger.warning(f"Collection full: no room for borg {BORGS[borg].name}")
                     break
                 free_slot = borg_count
             offset = save + addresses.SAVE_COLLECTION + addresses.COLLECTION_ENTRY * free_slot
@@ -95,12 +89,11 @@ class CollectionStage(Stage):
             self.dolphin.write_u16(save + addresses.SAVE_N_BORGS, borg_count)
 
     def _next_serial(self, collection_block: bytes) -> int:
-        serials = [struct.unpack_from(">I", collection_block,
-                                      o + addresses.COLLECTION_SERIAL_OFF)[0]
-                   for o in range(0, len(collection_block), addresses.COLLECTION_ENTRY)
-                   if not client_logic.is_empty_entry(
-                       struct.unpack_from(">H", collection_block, o)[0]
-                   )]
+        serials = [
+            struct.unpack_from(">I", collection_block, o + addresses.COLLECTION_SERIAL_OFF)[0]
+            for o in range(0, len(collection_block), addresses.COLLECTION_ENTRY)
+            if not client_logic.is_empty_entry(struct.unpack_from(">H", collection_block, o)[0])
+        ]
         next_serial = (max(serials) + 1) if serials else 0
         self._last_serial_handed = max(self._last_serial_handed, next_serial)
         value = self._last_serial_handed
@@ -115,8 +108,7 @@ class CollectionStage(Stage):
             if force is None:
                 continue
             indices = struct.unpack_from(FORCE_INDICES_FORMAT, force, addresses.FORCE_INDICES_OFF)
-            cost = sum(self._borg_cost(ids[i]) for i in indices
-                       if 0 <= i < len(ids))
+            cost = sum(self._borg_cost(ids[i]) for i in indices if 0 <= i < len(ids))
             current = struct.unpack_from(">I", force, addresses.FORCE_COST_OFF)[0]
             if current != cost:
                 self.dolphin.write_u32(base + addresses.FORCE_COST_OFF, cost)
@@ -137,8 +129,7 @@ class CollectionStage(Stage):
         pending = client_logic.pending_fragments(ap_state)
         if not pending:
             return
-        area = self.dolphin.read(box2 + addresses.BOX2_FRAGMENTS,
-                                 addresses.FRAG_ENTRY * addresses.FRAG_SLOTS)
+        area = self.dolphin.read(box2 + addresses.BOX2_FRAGMENTS, addresses.FRAG_ENTRY * addresses.FRAG_SLOTS)
         if area is None:
             return
         existing, free_slots = self._fragment_inventory(area)
@@ -183,10 +174,10 @@ class CollectionStage(Stage):
         for entry, borg in enumerate(ids):
             if client_logic.is_empty_entry(borg):
                 continue
-            offset = (save + addresses.SAVE_COLLECTION + addresses.COLLECTION_ENTRY * entry
-                      + addresses.COLLECTION_EXP_OFF)
+            offset = (
+                save + addresses.SAVE_COLLECTION + addresses.COLLECTION_ENTRY * entry + addresses.COLLECTION_EXP_OFF
+            )
             exp = self.dolphin.read_u32(offset) or 0
             self.dolphin.write_u32(offset, exp + XP_PER_ITEM * new_items)
         state.client_state_set(key, XP_STATE_FIELD, ap_state.xp_items)
-        logger.info(f"Borg Experience applied (+{XP_PER_ITEM * new_items} to the "
-                    f"collection)")
+        logger.info(f"Borg Experience applied (+{XP_PER_ITEM * new_items} to the collection)")

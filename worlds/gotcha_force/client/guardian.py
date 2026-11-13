@@ -59,8 +59,9 @@ class Guardian(CollectionStage, CheckStage):
         ap_state = client_logic.ApState.from_item_ids(i.item for i in ctx.items_received)
         slot = ctx.slot_data
 
-        states = self.dolphin.read(progress + addresses.OFF_CHAPTER_STATE,
-                                   addresses.CHAPTER_STATE_STRIDE * addresses.N_CHAPTERS)
+        states = self.dolphin.read(
+            progress + addresses.OFF_CHAPTER_STATE, addresses.CHAPTER_STATE_STRIDE * addresses.N_CHAPTERS
+        )
         if states is None:
             return None
         victories = self._victories(states)
@@ -96,8 +97,7 @@ class Guardian(CollectionStage, CheckStage):
             return
         self._patch_status = status.status
         if status.status == iso_patch.PATCH_CURRENT:
-            logger.info("Patched ISO detected: the on-map mission status "
-                        "display is active.")
+            logger.info("Patched ISO detected: the on-map mission status display is active.")
         elif status.status == iso_patch.PATCH_NONE:
             logger.warning(
                 "This ISO does not have the Archipelago patch: the on-map "
@@ -120,11 +120,12 @@ class Guardian(CollectionStage, CheckStage):
 
     @staticmethod
     def _victories(states: bytes) -> dict[int, int]:
-        return {c: states[addresses.CHAPTER_STATE_STRIDE * c + addresses.CHAPTER_STATE_WINS]
-                for c in range(addresses.N_CHAPTERS)}
+        return {
+            c: states[addresses.CHAPTER_STATE_STRIDE * c + addresses.CHAPTER_STATE_WINS]
+            for c in range(addresses.N_CHAPTERS)
+        }
 
-    def _write_player_state(self, progress: int, ap_state: client_logic.ApState,
-                            slot: client_logic.SlotData) -> None:
+    def _write_player_state(self, progress: int, ap_state: client_logic.ApState, slot: client_logic.SlotData) -> None:
         cap = client_logic.gf_cap_value(ap_state, client_logic.slot_value(slot, slot_keys.STARTING_BORG_COST))
         self._write_u32_if_diff(progress + addresses.OFF_GF_CAP, cap)
         self._write_u32_if_diff(progress + addresses.OFF_GF_CURRENT, cap)
@@ -132,16 +133,16 @@ class Guardian(CollectionStage, CheckStage):
         levels = client_logic.upgrade_levels(ap_state, client_logic.slot_value(slot, slot_keys.COMMANDER_ITEMS))
         self._write_if_diff(progress + addresses.OFF_UPGRADES, levels)
         self._write_u32_if_diff(progress + addresses.OFF_ZONES, addresses.ZONES_ALL_MASK)
-        self._write_u32_if_diff(progress + addresses.OFF_BOX_FLAG,
-                                addresses.BOX_UNLOCKED if ap_state.gotcha_box else addresses.BOX_LOCKED)
+        self._write_u32_if_diff(
+            progress + addresses.OFF_BOX_FLAG, addresses.BOX_UNLOCKED if ap_state.gotcha_box else addresses.BOX_LOCKED
+        )
 
     def _write_u32_if_diff(self, addr: int, value: int) -> None:
         self._write_if_diff(addr, struct.pack(">I", value))
 
     def _write_starting_borg(self, slot: client_logic.SlotData) -> None:
         starting = client_logic.slot_value(slot, slot_keys.STARTING_BORG)
-        self._write_if_diff(addresses.INITIAL_FORCE_TABLE,
-                            struct.pack(">H", starting) + addresses.NO_ID_BYTES)
+        self._write_if_diff(addresses.INITIAL_FORCE_TABLE, struct.pack(">H", starting) + addresses.NO_ID_BYTES)
         self._write_if_diff(addresses.AP_STORY_BORG, struct.pack(">H", starting))
 
     def _revert_story_flags(self, progress: int) -> None:
@@ -149,27 +150,31 @@ class Guardian(CollectionStage, CheckStage):
         if flags is None:
             return
         desired = bytearray(addresses.FLAGS64_LEN)
-        desired[::addresses.STORY_FLAG_STRIDE] = bytes(
-            flag & addresses.STORY_FLAG_PLAYED for flag in flags[::addresses.STORY_FLAG_STRIDE]
+        desired[:: addresses.STORY_FLAG_STRIDE] = bytes(
+            flag & addresses.STORY_FLAG_PLAYED for flag in flags[:: addresses.STORY_FLAG_STRIDE]
         )
         if flags != bytes(desired):
             self.dolphin.write(progress + addresses.OFF_FLAGS64, bytes(desired))
 
     def _clear_map_staging(self, progress: int) -> None:
-        self._write_if_diff(progress + addresses.OFF_MAP_STAGING,
-                            bytes(addresses.MAP_STAGING_ARRAYS * addresses.MAP_STAGING_LEN))
+        self._write_if_diff(
+            progress + addresses.OFF_MAP_STAGING, bytes(addresses.MAP_STAGING_ARRAYS * addresses.MAP_STAGING_LEN)
+        )
         route = (self.dolphin.read_u32(progress + addresses.OFF_ROUTE) or 0) & addresses.ROUTE_MASK
-        self._write_if_diff(progress + addresses.OFF_PERSISTENT + route * addresses.PERSISTENT_LEN,
-                            bytes(addresses.PERSISTENT_LEN))
+        self._write_if_diff(
+            progress + addresses.OFF_PERSISTENT + route * addresses.PERSISTENT_LEN, bytes(addresses.PERSISTENT_LEN)
+        )
 
     def _publish_chapter_states(self, progress: int, states: bytes, allowed: set[int]) -> None:
         for chapter in range(addresses.N_CHAPTERS):
             current = states[addresses.CHAPTER_STATE_STRIDE * chapter]
-            desired = ((current & ~(addresses.CHAPTER_AVAILABLE | addresses.CHAPTER_WON))
-                       | (addresses.CHAPTER_AVAILABLE if chapter in allowed else 0))
+            desired = (current & ~(addresses.CHAPTER_AVAILABLE | addresses.CHAPTER_WON)) | (
+                addresses.CHAPTER_AVAILABLE if chapter in allowed else 0
+            )
             if current != desired:
-                self.dolphin.write(progress + addresses.OFF_CHAPTER_STATE
-                                   + addresses.CHAPTER_STATE_STRIDE * chapter, bytes([desired]))
+                self.dolphin.write(
+                    progress + addresses.OFF_CHAPTER_STATE + addresses.CHAPTER_STATE_STRIDE * chapter, bytes([desired])
+                )
 
     def _refresh_map_caches(self, progress: int, available: set[int]) -> None:
         by_tile: dict[int, list[int]] = {}
@@ -181,21 +186,22 @@ class Guardian(CollectionStage, CheckStage):
         for tile in range(addresses.MAP_TILES):
             chapters = sorted(by_tile.get(tile, []))[:slots]
             self.dolphin.write(progress + addresses.OFF_MAP_COUNTS + tile, bytes([len(chapters)]))
-            self.dolphin.write(progress + addresses.OFF_MAP_LISTS + slots * tile,
-                               _zero_padded(chapters, slots))
-            self.dolphin.write(progress + addresses.OFF_MAP_MAJORS + slots * tile,
-                               _zero_padded((CHAPTERS[c].major & addresses.BYTE_MASK for c in chapters), slots))
+            self.dolphin.write(progress + addresses.OFF_MAP_LISTS + slots * tile, _zero_padded(chapters, slots))
+            self.dolphin.write(
+                progress + addresses.OFF_MAP_MAJORS + slots * tile,
+                _zero_padded((CHAPTERS[c].major & addresses.BYTE_MASK for c in chapters), slots),
+            )
 
-    def _write_hud_tables(self, ap_state: client_logic.ApState, slot: client_logic.SlotData,
-                          allowed: set[int], victories: dict[int, int]) -> None:
+    def _write_hud_tables(
+        self, ap_state: client_logic.ApState, slot: client_logic.SlotData, allowed: set[int], victories: dict[int, int]
+    ) -> None:
         ctx = self.ctx
         in_logic = client_logic.chapters_in_logic_for_slot(
             ap_state, slot, allowed, ctx.chapter_costs, client_logic.gf_ratio_for_slot(slot)
         )
         table = bytearray(addresses.AP_TABLE_LEN)
         flags = bytearray(addresses.AP_FLAGS_LEN)
-        slot_ids = ((set(ctx.checked_locations) | set(ctx.missing_locations))
-                    if ctx.server is not None else None)
+        slot_ids = (set(ctx.checked_locations) | set(ctx.missing_locations)) if ctx.server is not None else None
         for chapter in allowed:
             if chapter >= addresses.AP_FLAGS_LEN:
                 continue
@@ -203,18 +209,23 @@ class Guardian(CollectionStage, CheckStage):
                 done, total = self._chapter_counts(slot, chapter, slot_ids)
                 table[chapter * addresses.AP_TABLE_ENTRY] = done
                 table[chapter * addresses.AP_TABLE_ENTRY + addresses.AP_TABLE_TOTAL_OFF] = total
-            flags[chapter] = ((addresses.AP_FLAG_DONE if victories.get(chapter, 0) else 0)
-                              | (addresses.AP_FLAG_OUT_OF_LOGIC if chapter not in in_logic else 0))
+            flags[chapter] = (addresses.AP_FLAG_DONE if victories.get(chapter, 0) else 0) | (
+                addresses.AP_FLAG_OUT_OF_LOGIC if chapter not in in_logic else 0
+            )
         self._write_if_diff(addresses.AP_TABLE, bytes(table))
         self._write_if_diff(addresses.AP_FLAGS, bytes(flags))
 
-    def _chapter_counts(self, slot: client_logic.SlotData, chapter: int,
-                        slot_ids: set[int]) -> tuple[int, int]:
+    def _chapter_counts(self, slot: client_logic.SlotData, chapter: int, slot_ids: set[int]) -> tuple[int, int]:
         ctx = self.ctx
-        ids = client_logic.chapter_check_ids(
-            chapter, client_logic.slot_value(slot, slot_keys.MISSION_CHECKS),
-            ctx.gacha_by_chapter, ctx.ach_by_chapter
-        ) & slot_ids
+        ids = (
+            client_logic.chapter_check_ids(
+                chapter,
+                client_logic.slot_value(slot, slot_keys.MISSION_CHECKS),
+                ctx.gacha_by_chapter,
+                ctx.ach_by_chapter,
+            )
+            & slot_ids
+        )
         done = len(ids & set(ctx.checked_locations))
         return min(done, addresses.AP_TABLE_MAX_COUNT), min(len(ids), addresses.AP_TABLE_MAX_COUNT)
 
@@ -235,7 +246,7 @@ class Guardian(CollectionStage, CheckStage):
             if value is None:
                 continue
             offset = addr - first
-            if struct.unpack(">H", block[offset:offset + addresses.U16_SIZE])[0] != value:
+            if struct.unpack(">H", block[offset : offset + addresses.U16_SIZE])[0] != value:
                 self.dolphin.write_u16(addr, value)
         for addr, value in byte_writes.items():
             if block[addr - first] != value:
@@ -249,8 +260,10 @@ class Guardian(CollectionStage, CheckStage):
             if queue is None:
                 continue
             blob = queues.queue_with_inserts(
-                queues.apply_overrides(queue, vanilla.pointer, word_writes, byte_writes), vanilla.pointer,
-                edit.inserts, edit.removes
+                queues.apply_overrides(queue, vanilla.pointer, word_writes, byte_writes),
+                vanilla.pointer,
+                edit.inserts,
+                edit.removes,
             )
             dest = self.ctx.queue_arena[chapter]
             if self.dolphin.read(dest, len(blob)) != blob:
@@ -258,6 +271,7 @@ class Guardian(CollectionStage, CheckStage):
             entry = queues.stage_table_entry(chapter)
             if self.dolphin.read_u32(entry) != dest:
                 self.dolphin.write_u32(entry, dest)
+
 
 def _zero_padded(values: Iterable[int], length: int) -> bytes:
     data = bytes(values)

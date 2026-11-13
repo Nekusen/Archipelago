@@ -69,17 +69,11 @@ _MAX_SPHERE = max(ch.sphere for ch in CHAPTERS.values())
 
 _ACE_CELLS = frozenset(a for v in ACE_ADDRS.values() for a in v)
 _BOSS_CELLS = frozenset(BOSS_ADDRS)
-_PACK_CELLS = frozenset(PACK_LEADER_CELLS) | frozenset(
-    a for v in PACK_ESCORT_CELLS.values() for a in v
-)
+_PACK_CELLS = frozenset(PACK_LEADER_CELLS) | frozenset(a for v in PACK_ESCORT_CELLS.values() for a in v)
 _SPECIAL_CELLS = _ACE_CELLS | _BOSS_CELLS | _PACK_CELLS
 
-_VANILLA_ID: dict[int, int | None] = {
-    spawn.cell: spawn.borg for rows in SPAWNS.values() for spawn in rows
-}
-_CELL_CHAPTER: dict[int, int] = {
-    spawn.cell: chapter for chapter, rows in SPAWNS.items() for spawn in rows
-}
+_VANILLA_ID: dict[int, int | None] = {spawn.cell: spawn.borg for rows in SPAWNS.values() for spawn in rows}
+_CELL_CHAPTER: dict[int, int] = {spawn.cell: chapter for chapter, rows in SPAWNS.items() for spawn in rows}
 
 _CANDIDATES: tuple[int, ...] = RANDOMIZABLE
 
@@ -123,18 +117,12 @@ class Escort:
 
 @dataclasses.dataclass
 class EnemyPlan:
-    assignments: dict[int, int | None] = dataclasses.field(
-        default_factory=dict
-    )
+    assignments: dict[int, int | None] = dataclasses.field(default_factory=dict)
     flag_writes: dict[int, int] = dataclasses.field(default_factory=dict)
-    inserts: dict[int, tuple[Escort, ...]] = dataclasses.field(
-        default_factory=dict
-    )
+    inserts: dict[int, tuple[Escort, ...]] = dataclasses.field(default_factory=dict)
     removes: set[int] = dataclasses.field(default_factory=set)
     packs: dict[int, int] = dataclasses.field(default_factory=dict)
-    pairs: dict[int, tuple[int, int]] = dataclasses.field(
-        default_factory=dict
-    )
+    pairs: dict[int, tuple[int, int]] = dataclasses.field(default_factory=dict)
 
 
 def assign_ai(seed: int, mode: int, lo: int, hi: int) -> dict[int, int]:
@@ -166,8 +154,7 @@ def _stream(seed: int, salt: int) -> random.Random:
     return random.Random((seed << _SALT_SHIFT) ^ salt)
 
 
-def _roll_stat(rng: random.Random, mode: int, low: int, high: int,
-               sphere: int) -> int:
+def _roll_stat(rng: random.Random, mode: int, low: int, high: int, sphere: int) -> int:
     if low >= high:
         return low
     if mode == STAT_RANDOM:
@@ -181,8 +168,7 @@ def assign_levels(seed: int, mode: int, lo: int, hi: int) -> dict[int, int]:
     return _assign_stat(seed, LEVEL_TARGET, mode, lo, hi)
 
 
-def assign_partners(seed: int, borgs_mode: int,
-                    ace_mode: int = SPECIAL_VANILLA) -> dict[int, int]:
+def assign_partners(seed: int, borgs_mode: int, ace_mode: int = SPECIAL_VANILLA) -> dict[int, int]:
     if borgs_mode == PARTNER_VANILLA and ace_mode == SPECIAL_VANILLA:
         return {}
     ace_map = _ace_permutation(seed, ace_mode)
@@ -227,13 +213,15 @@ def _fill_budget(rng: random.Random, target: int, slots: int) -> list[int]:
     remaining = target
     for filled in range(slots):
         quota = remaining / (slots - filled)
-        pool = [b for b in _CANDIDATES
-                if quota * PARTNER_BUDGET_PICK_MIN_FACTOR <= COSTS[b] <= quota * PARTNER_BUDGET_PICK_MAX_FACTOR]
+        pool = [
+            b
+            for b in _CANDIDATES
+            if quota * PARTNER_BUDGET_PICK_MIN_FACTOR <= COSTS[b] <= quota * PARTNER_BUDGET_PICK_MAX_FACTOR
+        ]
         if pool:
             chosen = rng.choice(pool)
         else:
-            chosen = min(_CANDIDATES,
-                         key=lambda b: abs(COSTS[b] - quota))
+            chosen = min(_CANDIDATES, key=lambda b: abs(COSTS[b] - quota))
         result.append(chosen)
         remaining -= COSTS[chosen]
         if remaining < PARTNER_BUDGET_EXHAUSTED_BELOW and filled + 1 < slots:
@@ -258,9 +246,10 @@ def _list_writes(addrs: list[int], vanilla: list[int], final: list[int]) -> dict
     return out
 
 
-def chapter_costs(assignments: Mapping[int, int | None],
-                  inserts: Mapping[int, tuple[Escort, ...]] | None = None,
-                  ) -> dict[int, int]:
+def chapter_costs(
+    assignments: Mapping[int, int | None],
+    inserts: Mapping[int, tuple[Escort, ...]] | None = None,
+) -> dict[int, int]:
     extra = escort_costs(inserts) if inserts else {}
     costs: dict[int, int] = {}
     for chapter, spawns in SPAWNS.items():
@@ -282,14 +271,12 @@ def escort_costs(inserts: Mapping[int, tuple[Escort, ...]]) -> dict[int, int]:
 
 
 def pack_can_fuse(plan: EnemyPlan, cell: int) -> bool:
-    return (plan.packs.get(cell) in MACHINE_PACKS
-            and not (plan.flag_writes.get(cell + FLAGS_OFF, SPAWN_FLAGS[cell])
-                     & NO_BURST_BIT))
+    return plan.packs.get(cell) in MACHINE_PACKS and not (
+        plan.flag_writes.get(cell + FLAGS_OFF, SPAWN_FLAGS[cell]) & NO_BURST_BIT
+    )
 
 
-def plan_enemies(seed: int, mode: int,
-                        ace_mode: int = SPECIAL_VANILLA,
-                        boss_mode: int = SPECIAL_VANILLA) -> EnemyPlan:
+def plan_enemies(seed: int, mode: int, ace_mode: int = SPECIAL_VANILLA, boss_mode: int = SPECIAL_VANILLA) -> EnemyPlan:
     plan = EnemyPlan(assignments=dict(_assign_enemies(seed, mode, ace_mode, boss_mode)))
     if mode == MODE_VANILLA:
         return plan
@@ -306,9 +293,9 @@ def plan_enemies(seed: int, mode: int,
     return plan
 
 
-def _assign_enemies(seed: int, mode: int,
-                   ace_mode: int = SPECIAL_VANILLA,
-                   boss_mode: int = SPECIAL_VANILLA) -> dict[int, int]:
+def _assign_enemies(
+    seed: int, mode: int, ace_mode: int = SPECIAL_VANILLA, boss_mode: int = SPECIAL_VANILLA
+) -> dict[int, int]:
     out = _generic_pass(seed, mode)
     if mode == MODE_VANILLA:
         return out
@@ -332,8 +319,7 @@ def _generic_pass(seed: int, mode: int) -> dict[int, int]:
     return out
 
 
-def _pinned_random_spawn(rng: random.Random, options: Sequence[int], mode: int,
-                         randomized: bool) -> int:
+def _pinned_random_spawn(rng: random.Random, options: Sequence[int], mode: int, randomized: bool) -> int:
     choice = rng.choice(options)
     if not randomized:
         return choice
@@ -387,8 +373,7 @@ def _boss_ids(rng_boss: random.Random, boss_mode: int, cells: list[int]) -> list
     if boss_mode == BOSS_VANILLA:
         return None
     singles = BOSS_IDS if boss_mode == BOSS_ROSTER else _CANDIDATES
-    return [rng_boss.choice(singles + PACK_KINDS if cell in _PACK_ELIGIBLE else singles)
-            for cell in cells]
+    return [rng_boss.choice(singles + PACK_KINDS if cell in _PACK_ELIGIBLE else singles) for cell in cells]
 
 
 def _in_queue(queue: Queue, cell: int) -> bool:
@@ -400,8 +385,7 @@ _PACK_ELIGIBLE: frozenset[int] = frozenset(PACK_LEADER_CELLS) | frozenset(
 )
 
 
-def _place_boss(plan: EnemyPlan, rng_escort: random.Random, mode: int,
-                cell: int, new_id: int) -> None:
+def _place_boss(plan: EnemyPlan, rng_escort: random.Random, mode: int, cell: int, new_id: int) -> None:
     escort_cells = PACK_ESCORT_CELLS.get(cell, ())
     if new_id in PACK_KINDS:
         free_cells = _place_pack(plan, cell, new_id, escort_cells)
@@ -410,8 +394,7 @@ def _place_boss(plan: EnemyPlan, rng_escort: random.Random, mode: int,
     _randomize_free_escorts(plan, rng_escort, mode, free_cells)
 
 
-def _place_pack(plan: EnemyPlan, cell: int, kind: int,
-                escort_cells: tuple[int, ...]) -> tuple[int, ...]:
+def _place_pack(plan: EnemyPlan, cell: int, kind: int, escort_cells: tuple[int, ...]) -> tuple[int, ...]:
     alone = kind in MACHINE_PACKS and pair_alone_at(cell)
     leader, escorts = pack_escorts(kind)
     plan.packs[cell] = kind
@@ -420,10 +403,10 @@ def _place_pack(plan: EnemyPlan, cell: int, kind: int,
     for escort_cell, escort in zip(escort_cells, escorts, strict=False):
         _assign_cell(plan, escort_cell, escort.borg)
         plan.flag_writes[escort_cell + FLAGS_OFF] = burst_flags(escort_cell, alone)
-    leftover = escorts[len(escort_cells):]
+    leftover = escorts[len(escort_cells) :]
     if leftover:
         plan.inserts[cell] = leftover
-    free_cells = escort_cells[len(escorts):]
+    free_cells = escort_cells[len(escorts) :]
     if kind in MACHINE_PACKS and PACK_LEADER_CELLS.get(cell) == PACK_DARK_KNIGHT:
         for escort_cell in free_cells:
             plan.removes.add(escort_cell)
@@ -434,14 +417,14 @@ def _place_pack(plan: EnemyPlan, cell: int, kind: int,
 
 def pair_alone_at(cell: int) -> bool:
     wave = ISOLATED_WAVES.get(_CELL_CHAPTER[cell])
-    return ((wave is not None and wave.leader_cell == cell)
-            or PACK_LEADER_CELLS.get(cell) == PACK_DARK_KNIGHT)
+    return (wave is not None and wave.leader_cell == cell) or PACK_LEADER_CELLS.get(cell) == PACK_DARK_KNIGHT
 
 
 def pack_escorts(kind: int) -> tuple[int, tuple[Escort, ...]]:
     if kind == PACK_DARK_KNIGHT:
-        return DARK_KNIGHT, tuple(Escort(escort.borg, escort.cap, None, escort.offset)
-                                  for escort in DARK_KNIGHT_ESCORTS)
+        return DARK_KNIGHT, tuple(
+            Escort(escort.borg, escort.cap, None, escort.offset) for escort in DARK_KNIGHT_ESCORTS
+        )
     if kind in MACHINE_PACKS:
         leader, escort = MACHINE_PACK_PAIRS[kind]
         return leader, (Escort(escort, MACHINE_ESCORT_CAP, None, _MACHINE_INSERT_DPOS),)
@@ -458,8 +441,7 @@ def burst_flags(cell: int, alone: bool) -> int:
     return base if alone else base | NO_BURST_BIT
 
 
-def _place_single_boss(plan: EnemyPlan, cell: int, borg_id: int,
-                       escort_cells: tuple[int, ...]) -> tuple[int, ...]:
+def _place_single_boss(plan: EnemyPlan, cell: int, borg_id: int, escort_cells: tuple[int, ...]) -> tuple[int, ...]:
     _assign_cell(plan, cell, borg_id)
     if PACK_LEADER_CELLS.get(cell) in MACHINE_PACKS:
         plan.flag_writes[cell + FLAGS_OFF] = burst_flags(cell, False)
@@ -468,8 +450,7 @@ def _place_single_boss(plan: EnemyPlan, cell: int, borg_id: int,
     return escort_cells
 
 
-def _randomize_free_escorts(plan: EnemyPlan, rng_escort: random.Random, mode: int,
-                            cells: tuple[int, ...]) -> None:
+def _randomize_free_escorts(plan: EnemyPlan, rng_escort: random.Random, mode: int, cells: tuple[int, ...]) -> None:
     for escort_cell in cells:
         pick = _generic_pick(rng_escort, mode, escort_cell)
         if pick is not None and pick != _VANILLA_ID.get(escort_cell):
@@ -491,10 +472,8 @@ def _relocate_pairs(plan: EnemyPlan) -> None:
         leader_cell, partner_cell = ISOLATED_WAVES[chapter]
         if leader_cell in _SPECIAL_CELLS or partner_cell in _SPECIAL_CELLS:
             continue
-        cells = [spawn.cell for spawn in SPAWNS[chapter]
-                 if spawn.cell not in _SPECIAL_CELLS]
-        final = {addr: plan.assignments.get(addr, _VANILLA_ID.get(addr))
-                 for addr in cells}
+        cells = [spawn.cell for spawn in SPAWNS[chapter] if spawn.cell not in _SPECIAL_CELLS]
+        final = {addr: plan.assignments.get(addr, _VANILLA_ID.get(addr)) for addr in cells}
         for first_id, second_id in FUSION_PAIRS:
             cells_first = [c for c in cells if final[c] == first_id]
             cells_second = [c for c in cells if final[c] == second_id]
@@ -529,8 +508,10 @@ def pack_members(plan: EnemyPlan, cell: int) -> list[int]:
     ids = [plan.assignments.get(cell, _VANILLA_ID.get(cell))]
     kind = plan.packs[cell]
     n_escorts = len(DARK_KNIGHT_ESCORTS) if kind == PACK_DARK_KNIGHT else MACHINE_PAIR_ESCORTS
-    ids.extend(plan.assignments.get(escort_cell, _VANILLA_ID.get(escort_cell))
-               for escort_cell in PACK_ESCORT_CELLS.get(cell, ())[:n_escorts])
+    ids.extend(
+        plan.assignments.get(escort_cell, _VANILLA_ID.get(escort_cell))
+        for escort_cell in PACK_ESCORT_CELLS.get(cell, ())[:n_escorts]
+    )
     ids.extend(e.borg for e in plan.inserts.get(cell, ()))
     return [i for i in ids if i is not None]
 

@@ -48,12 +48,8 @@ CMD_UPGRADE_COUNT: Final = len(UPGRADE_LADDER)
 
 MIN_PIECES_FOR_FRAGMENTS: Final = 2
 
-COMMANDER_LADDERS: Final = {
-    i: (KOTARO_UPGRADE_LADDER if i == KOTARO else UPGRADE_LADDER) for i in COMPANIONS
-}
-COMMANDER_UPGRADE_STEPS: Final = {
-    i: len(ladder) for i, ladder in COMMANDER_LADDERS.items()
-}
+COMMANDER_LADDERS: Final = {i: (KOTARO_UPGRADE_LADDER if i == KOTARO else UPGRADE_LADDER) for i in COMPANIONS}
+COMMANDER_UPGRADE_STEPS: Final = {i: len(ladder) for i, ladder in COMMANDER_LADDERS.items()}
 
 
 class GotchaForceItem(Item):
@@ -119,8 +115,7 @@ ITEM_NAME_GROUPS: dict[str, set[str]] = {
     "Death Crystals": {DEATH_CRYSTAL},
     "Area Access": {area_access_item_name(t) for t in ZONES},
     "Commanders": {commander_item_name(i) for i in COMPANIONS},
-    "Commander Upgrades": ({commander_upgrade_item_name(i) for i in COMPANIONS}
-                           | {PROG_CMD_UPGRADE}),
+    "Commander Upgrades": ({commander_upgrade_item_name(i) for i in COMPANIONS} | {PROG_CMD_UPGRADE}),
     "Borgs": {b.name for b in BORGS.values()},
     "Borg Fragments": {fragment_item_name(i) for i in BORGS},
 }
@@ -189,8 +184,7 @@ def g_red_steps(starting_borg: int) -> int:
 
 
 def _zones_in_seed(world: GotchaForceWorld) -> set[int]:
-    return ({CHAPTERS[c].tile for c in world.chapters_in_pool}
-            | {CHAPTERS[c].tile for c in world.goal_chapters})
+    return {CHAPTERS[c].tile for c in world.chapters_in_pool} | {CHAPTERS[c].tile for c in world.goal_chapters}
 
 
 def uses_fragments(options: GotchaForceOptions) -> bool:
@@ -204,8 +198,9 @@ def borg_pool_items(borg_id: int, fragments_mode: bool) -> list[str]:
     return [BORGS[borg_id].name]
 
 
-def _trim_promoted_borgs(world: GotchaForceWorld, pool: list[str],
-                         promoted: list[int], free_slots: int, fragments: bool) -> int:
+def _trim_promoted_borgs(
+    world: GotchaForceWorld, pool: list[str], promoted: list[int], free_slots: int, fragments: bool
+) -> int:
     unfilled = len(pool) + free_slots
     trimmable = _trimmable_promoted_borgs(world, promoted, fragments)
     world.random.shuffle(trimmable)
@@ -220,21 +215,23 @@ def _trim_promoted_borgs(world: GotchaForceWorld, pool: list[str],
     world.progression_borgs = tuple(sorted(promoted))
     world.progression_borg_items = borg_pool_item_names(promoted, fragments)
     logging.warning(
-        "Gotcha Force (%s): the pool did not fit; %d fewer progression "
-        "borg(s) (%s) so that it fits in %d locations",
-        world.player_name, len(removed),
-        ", ".join(BORGS[b].name for b in removed), unfilled
+        "Gotcha Force (%s): the pool did not fit; %d fewer progression borg(s) (%s) so that it fits in %d locations",
+        world.player_name,
+        len(removed),
+        ", ".join(BORGS[b].name for b in removed),
+        unfilled,
     )
     return free_slots
 
 
-def _trimmable_promoted_borgs(world: GotchaForceWorld, promoted: list[int],
-                              fragments: bool) -> list[int]:
+def _trimmable_promoted_borgs(world: GotchaForceWorld, promoted: list[int], fragments: bool) -> list[int]:
     early = world.multiworld.local_early_items[world.player]
     protected = set(world.achievement_borg_items)
-    return [b for b in promoted
-            if borg_pool_items(b, fragments)[0] not in early
-            and borg_pool_items(b, fragments)[0] not in protected]
+    return [
+        b
+        for b in promoted
+        if borg_pool_items(b, fragments)[0] not in early and borg_pool_items(b, fragments)[0] not in protected
+    ]
 
 
 def borg_pool_item_names(borg_ids: Iterable[int], fragments_mode: bool) -> set[str]:
@@ -250,18 +247,17 @@ def _drop_spare_crystals(world: GotchaForceWorld, pool: list[str], free_slots: i
         free_slots += dropped
         world.crystals_in_pool -= dropped
         logging.warning(
-            "Gotcha Force (%s): the pool did not fit; %d fewer Death "
-            "Crystal(s), %d left for the %d required",
-            world.player_name, dropped, world.crystals_in_pool,
-            world.options.death_crystals_required.value
+            "Gotcha Force (%s): the pool did not fit; %d fewer Death Crystal(s), %d left for the %d required",
+            world.player_name,
+            dropped,
+            world.crystals_in_pool,
+            world.options.death_crystals_required.value,
         )
     return free_slots
 
 
-def _borg_items_that_fit(world: GotchaForceWorld, promoted: list[int],
-                         free_slots: int, fragments: bool) -> list[str]:
-    order = sorted(set(BORGS) - NEVER_IN_POOL - set(promoted)
-                   - set(world.box_borgs))
+def _borg_items_that_fit(world: GotchaForceWorld, promoted: list[int], free_slots: int, fragments: bool) -> list[str]:
+    order = sorted(set(BORGS) - NEVER_IN_POOL - set(promoted) - set(world.box_borgs))
     world.random.shuffle(order)
     borg_pool: list[str] = []
     for borg_id in order:

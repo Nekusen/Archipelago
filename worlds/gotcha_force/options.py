@@ -296,12 +296,14 @@ class AchievementTypes(OptionSet):
 
     display_name = "Achievement Types"
     valid_keys = ALL_TYPES
-    default = frozenset({
-        TYPE_PARTNER_STYLE,
-        TYPE_COMMANDER_STYLE,
-        TYPE_TRIBE_FORCE,
-        TYPE_THEME,
-    })
+    default = frozenset(
+        {
+            TYPE_PARTNER_STYLE,
+            TYPE_COMMANDER_STYLE,
+            TYPE_TRIBE_FORCE,
+            TYPE_THEME,
+        }
+    )
 
 
 class TribeForceMinCost(Range):
@@ -660,45 +662,54 @@ class GotchaForceOptions(PerGameCommonOptions):
 
 
 OPTION_GROUPS = [
-    OptionGroup("Goal", [
-        Goal,
-        GoalMission,
-        MissionPool,
-        CustomMissionCount,
-        CustomMissions,
-        StoryKeys,
-        DeathCrystalsInPool,
-        DeathCrystalsRequired,
-    ]),
-    OptionGroup("Pool", [
-        GachaLocations,
-        GachaRate,
-        GachaChecks,
-        Achievements,
-        AchievementTypes,
-        TribeForceMinCost,
-        TribeForceTribes,
-        MissionChecks,
-        BorgItems,
-        CommanderItems,
-        AreaAccessItems,
-        GotchaBox,
-    ]),
-    OptionGroup("Difficulty", [
-        GFLogicDifficulty,
-        StartingBorg,
-        EnemyRandomization,
-        CommanderAceBorgs,
-        BossBorgs,
-        PartnerBorgs,
-        PartnerAceBorgs,
-        EnemyAI,
-        EnemyAIMinimum,
-        EnemyAIMaximum,
-        EnemyLevels,
-        EnemyLevelMinimum,
-        EnemyLevelMaximum,
-    ]),
+    OptionGroup(
+        "Goal",
+        [
+            Goal,
+            GoalMission,
+            MissionPool,
+            CustomMissionCount,
+            CustomMissions,
+            StoryKeys,
+            DeathCrystalsInPool,
+            DeathCrystalsRequired,
+        ],
+    ),
+    OptionGroup(
+        "Pool",
+        [
+            GachaLocations,
+            GachaRate,
+            GachaChecks,
+            Achievements,
+            AchievementTypes,
+            TribeForceMinCost,
+            TribeForceTribes,
+            MissionChecks,
+            BorgItems,
+            CommanderItems,
+            AreaAccessItems,
+            GotchaBox,
+        ],
+    ),
+    OptionGroup(
+        "Difficulty",
+        [
+            GFLogicDifficulty,
+            StartingBorg,
+            EnemyRandomization,
+            CommanderAceBorgs,
+            BossBorgs,
+            PartnerBorgs,
+            PartnerAceBorgs,
+            EnemyAI,
+            EnemyAIMinimum,
+            EnemyAIMaximum,
+            EnemyLevels,
+            EnemyLevelMinimum,
+            EnemyLevelMaximum,
+        ],
+    ),
 ]
 
 DIFFICULTY_RATIOS = {
@@ -722,8 +733,7 @@ def validate_options(options: GotchaForceOptions, player_name: str) -> None:
     _validate_custom_missions(options, player_name)
     _validate_achievement_types(options, player_name)
     _validate_range("enemy_ai", options.enemy_ai_minimum, options.enemy_ai_maximum, player_name)
-    _validate_range("enemy_level", options.enemy_level_minimum, options.enemy_level_maximum,
-                    player_name)
+    _validate_range("enemy_level", options.enemy_level_minimum, options.enemy_level_maximum, player_name)
 
 
 def _validate_crystals(options: GotchaForceOptions, player_name: str) -> None:
@@ -731,8 +741,7 @@ def _validate_crystals(options: GotchaForceOptions, player_name: str) -> None:
     required = options.death_crystals_required.value
     if required > pool:
         raise OptionError(
-            f"{player_name}: death_crystals_required ({required}) cannot "
-            f"exceed death_crystals_in_pool ({pool})"
+            f"{player_name}: death_crystals_required ({required}) cannot exceed death_crystals_in_pool ({pool})"
         )
 
 
@@ -746,10 +755,7 @@ def _validate_goal_mission(options: GotchaForceOptions, player_name: str) -> Non
             f"chapter (see the ids in the spoiler or the tracker)"
         )
     if chapter == TUTORIAL_CHAPTER:
-        raise OptionError(
-            f"{player_name}: goal_mission cannot be the tutorial "
-            f"(chapter {TUTORIAL_CHAPTER})"
-        )
+        raise OptionError(f"{player_name}: goal_mission cannot be the tutorial (chapter {TUTORIAL_CHAPTER})")
 
 
 def _validate_custom_missions(options: GotchaForceOptions, player_name: str) -> None:
@@ -801,7 +807,5 @@ def _validate_achievement_types(options: GotchaForceOptions, player_name: str) -
 def _validate_range(name: str, minimum: Range, maximum: Range, player_name: str) -> None:
     if minimum.value > maximum.value:
         raise OptionError(
-            f"{player_name}: {name}_minimum "
-            f"({minimum.value}) cannot exceed "
-            f"{name}_maximum ({maximum.value})"
+            f"{player_name}: {name}_minimum ({minimum.value}) cannot exceed {name}_maximum ({maximum.value})"
         )

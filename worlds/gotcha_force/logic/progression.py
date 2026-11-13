@@ -40,8 +40,7 @@ ALL_COMPANIONS: frozenset[int] = frozenset(COMPANIONS)
 
 def random_goal_candidates() -> list[int]:
     floor = _goal_sphere(FIXED_GOAL_CHAPTERS[RANDOM_GOAL_FLOOR])
-    return sorted(c for c in CHAPTERS
-                  if c != TUTORIAL_CHAPTER and CHAPTERS[c].sphere >= floor)
+    return sorted(c for c in CHAPTERS if c != TUTORIAL_CHAPTER and CHAPTERS[c].sphere >= floor)
 
 
 def _goal_sphere(goal_chapters: Iterable[int]) -> int:
@@ -55,11 +54,12 @@ def _goal_sphere(goal_chapters: Iterable[int]) -> int:
     return min(caps)
 
 
-def pick_variants(goal_chapters: Iterable[int], mission_pool: int,
-                  rng: random.Random, plando: Iterable[int] = ()) -> tuple[int, ...]:
+def pick_variants(
+    goal_chapters: Iterable[int], mission_pool: int, rng: random.Random, plando: Iterable[int] = ()
+) -> tuple[int, ...]:
     goal_set = set(goal_chapters)
     cut = _chapters_past_goal(goal_set)
-    base = (MAIN_CHAPTERS if mission_pool == POOL_MAIN else frozenset(CHAPTERS))
+    base = MAIN_CHAPTERS if mission_pool == POOL_MAIN else frozenset(CHAPTERS)
     wanted = set(plando)
     picks: list[int] = []
     for pair in VARIANT_PAIRS:
@@ -78,14 +78,12 @@ def pick_variants(goal_chapters: Iterable[int], mission_pool: int,
 def _chapters_past_goal(goal_chapters: Iterable[int]) -> set[int]:
     goal_set = set(goal_chapters)
     cap = _goal_sphere(goal_set)
-    return {c for c, ch in CHAPTERS.items()
-            if ch.sphere > cap and c not in goal_set}
+    return {c for c, ch in CHAPTERS.items() if ch.sphere > cap and c not in goal_set}
 
 
-def resolve_custom_chapters(goal_chapters: Iterable[int],
-                            variant_picks: Iterable[int],
-                            plando: Iterable[int], count: int,
-                            rng: random.Random) -> tuple[int, ...]:
+def resolve_custom_chapters(
+    goal_chapters: Iterable[int], variant_picks: Iterable[int], plando: Iterable[int], count: int, rng: random.Random
+) -> tuple[int, ...]:
     candidates = [c for c in chapter_pool(goal_chapters, POOL_ALL, variant_picks) if c != TUTORIAL_CHAPTER]
     chosen = {c for c in plando if c in candidates}
     remainder = [c for c in candidates if c not in chosen]
@@ -94,10 +92,12 @@ def resolve_custom_chapters(goal_chapters: Iterable[int],
     return tuple(sorted(chosen | set(filler) | {TUTORIAL_CHAPTER}))
 
 
-def chapter_pool(goal_chapters: Iterable[int],
-                 mission_pool: int = POOL_ALL,
-                 variant_picks: Iterable[int] = (),
-                 custom_chapters: Iterable[int] = ()) -> list[int]:
+def chapter_pool(
+    goal_chapters: Iterable[int],
+    mission_pool: int = POOL_ALL,
+    variant_picks: Iterable[int] = (),
+    custom_chapters: Iterable[int] = (),
+) -> list[int]:
     goal_set = set(goal_chapters)
     cut = _chapters_past_goal(goal_set)
     if mission_pool == POOL_CUSTOM:
@@ -107,12 +107,8 @@ def chapter_pool(goal_chapters: Iterable[int],
     else:
         base = CHAPTERS.keys()
     chosen = set(variant_picks) | goal_set
-    discarded = {m for pair in VARIANT_PAIRS
-                 if chosen & set(pair)
-                 for m in pair if m not in chosen}
-    return sorted(c for c in base
-                  if c not in cut and c not in goal_set
-                  and c not in discarded)
+    discarded = {m for pair in VARIANT_PAIRS if chosen & set(pair) for m in pair if m not in chosen}
+    return sorted(c for c in base if c not in cut and c not in goal_set and c not in discarded)
 
 
 def keys_needed_by_chapter(pool: Iterable[int], story_keys: int) -> dict[int, int]:

@@ -31,9 +31,12 @@ class GotchaForceCommandProcessor(ClientCommandProcessor):
         slot, ap_state, allowed, in_logic = view
         out_of_logic = len(allowed) - len(in_logic)
         pending = logic.pending_checks_by_chapter(
-            allowed if show_all else in_logic, set(ctx.missing_locations),
-            logic.slot_value(slot, slot_keys.MISSION_CHECKS), ctx.gacha_by_chapter,
-            ctx.ach_by_chapter, self._obtainable_achievements(show_all, ap_state, slot, in_logic)
+            allowed if show_all else in_logic,
+            set(ctx.missing_locations),
+            logic.slot_value(slot, slot_keys.MISSION_CHECKS),
+            ctx.gacha_by_chapter,
+            ctx.ach_by_chapter,
+            self._obtainable_achievements(show_all, ap_state, slot, in_logic),
         )
         if not pending:
             logger.info(_no_pending_message(show_all, out_of_logic))
@@ -45,13 +48,15 @@ class GotchaForceCommandProcessor(ClientCommandProcessor):
             for line in by_zone[zone]:
                 logger.info(f"    {line}")
 
-    def _obtainable_achievements(self, show_all: bool, ap_state: ApState, slot: SlotData,
-                                 in_logic: set[int]) -> set[int] | None:
+    def _obtainable_achievements(
+        self, show_all: bool, ap_state: ApState, slot: SlotData, in_logic: set[int]
+    ) -> set[int] | None:
         ctx = self.ctx
         if show_all or not ctx.achievement_specs:
             return None
-        return achievements.achievements_in_logic(ctx.achievement_specs, ap_state, slot, in_logic,
-                                     ctx.achievement_assignments)
+        return achievements.achievements_in_logic(
+            ctx.achievement_specs, ap_state, slot, in_logic, ctx.achievement_assignments
+        )
 
     def _cmd_mission(self) -> None:
         chapter = self.ctx.last_chapter
@@ -59,8 +64,10 @@ class GotchaForceCommandProcessor(ClientCommandProcessor):
             logger.info("No chapter selected yet.")
             return
         partner_text = f"; {progression.partner_label(chapter)}" if chapter in CHAPTERS else ""
-        logger.info(f"Current chapter: {tracker.chapter_label(chapter)} "
-                    f"(zone: {logic.chapter_zone_name(chapter)}{partner_text})")
+        logger.info(
+            f"Current chapter: {tracker.chapter_label(chapter)} "
+            f"(zone: {logic.chapter_zone_name(chapter)}{partner_text})"
+        )
 
     def _cmd_dolphin(self) -> None:
         ctx = self.ctx
@@ -79,13 +86,17 @@ def _no_pending_message(show_all: bool, out_of_logic: int) -> str:
 def _pending_header(show_all: bool, pending: dict[int, int], out_of_logic: int) -> str:
     total = sum(pending.values())
     if show_all:
-        return (f"Pending checks in ALL playable missions "
-                f"({total} in {len(pending)} missions; including "
-                f"{out_of_logic} out of logic due to GF Energy):")
+        return (
+            f"Pending checks in ALL playable missions "
+            f"({total} in {len(pending)} missions; including "
+            f"{out_of_logic} out of logic due to GF Energy):"
+        )
     if out_of_logic:
-        return (f"Pending checks IN LOGIC ({total} in {len(pending)} missions; "
-                f"{out_of_logic} playable missions are out of logic "
-                f"due to GF Energy - see /checks all):")
+        return (
+            f"Pending checks IN LOGIC ({total} in {len(pending)} missions; "
+            f"{out_of_logic} playable missions are out of logic "
+            f"due to GF Energy - see /checks all):"
+        )
     return f"Pending checks IN LOGIC ({total} in {len(pending)} missions):"
 
 

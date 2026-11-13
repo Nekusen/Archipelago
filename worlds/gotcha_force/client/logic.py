@@ -176,8 +176,9 @@ class _ChapterGates:
 
 
 def gf_ratio_for_slot(slot: SlotData) -> float:
-    return DIFFICULTY_RATIOS.get(slot_value(slot, slot_keys.GF_LOGIC_DIFFICULTY),
-                                 DIFFICULTY_RATIOS[SLOT_DEFAULTS[slot_keys.GF_LOGIC_DIFFICULTY]])
+    return DIFFICULTY_RATIOS.get(
+        slot_value(slot, slot_keys.GF_LOGIC_DIFFICULTY), DIFFICULTY_RATIOS[SLOT_DEFAULTS[slot_keys.GF_LOGIC_DIFFICULTY]]
+    )
 
 
 def slot_value(slot: SlotData, key: str) -> Any:
@@ -234,8 +235,7 @@ def _ladder_level(ladder: tuple[int, ...], steps: int) -> int:
     return ladder[steps - 1] if steps else 0
 
 
-def desired_borgs(state: ApState,
-                  box_borgs: Iterable[int] = ()) -> set[int]:
+def desired_borgs(state: ApState, box_borgs: Iterable[int] = ()) -> set[int]:
     complete = set(state.borgs)
     for borg_id, pieces in state.fragments.items():
         if pieces >= BORGS[borg_id].fragments:
@@ -250,20 +250,17 @@ def desired_borgs(state: ApState,
 
 
 def pending_fragments(state: ApState) -> dict[int, int]:
-    return {borg_id: pieces
-            for borg_id, pieces in state.fragments.items()
-            if 0 < pieces < BORGS[borg_id].fragments}
+    return {borg_id: pieces for borg_id, pieces in state.fragments.items() if 0 < pieces < BORGS[borg_id].fragments}
 
 
 def allowed_chapters(state: ApState, slot: SlotData) -> set[int]:
-    gates = _ChapterGates(state, bool(slot_value(slot, slot_keys.AREA_ACCESS_ITEMS)),
-                          partner_logic_on(slot), unlocked_partners(state))
+    gates = _ChapterGates(
+        state, bool(slot_value(slot, slot_keys.AREA_ACCESS_ITEMS)), partner_logic_on(slot), unlocked_partners(state)
+    )
     keys = progression.keys_needed_by_chapter(chapter_pool_for_slot(slot), slot_value(slot, slot_keys.STORY_KEYS))
-    out = {chapter for chapter, needed in keys.items()
-           if state.story_keys >= needed and gates.open(chapter)}
+    out = {chapter for chapter, needed in keys.items() if state.story_keys >= needed and gates.open(chapter)}
     if state.crystals >= slot_value(slot, slot_keys.DEATH_CRYSTALS_REQUIRED):
-        out |= {chapter for chapter in slot_value(slot, slot_keys.GOAL_CHAPTERS)
-                if gates.open(chapter)}
+        out |= {chapter for chapter in slot_value(slot, slot_keys.GOAL_CHAPTERS) if gates.open(chapter)}
     return out
 
 
@@ -276,59 +273,63 @@ def unlocked_partners(state: ApState) -> set[int]:
 
 
 def chapter_pool_for_slot(slot: SlotData) -> list[int]:
-    return progression.chapter_pool(tuple(slot_value(slot, slot_keys.GOAL_CHAPTERS)),
-                        slot_value(slot, slot_keys.MISSION_POOL),
-                        slot_value(slot, slot_keys.VARIANT_PICKS),
-                        slot_value(slot, slot_keys.CUSTOM_CHAPTERS))
+    return progression.chapter_pool(
+        tuple(slot_value(slot, slot_keys.GOAL_CHAPTERS)),
+        slot_value(slot, slot_keys.MISSION_POOL),
+        slot_value(slot, slot_keys.VARIANT_PICKS),
+        slot_value(slot, slot_keys.CUSTOM_CHAPTERS),
+    )
 
 
 def pending_checks_by_chapter(
-        allowed: set[int], missing: set[int],
-        checks: int = SLOT_DEFAULTS[slot_keys.MISSION_CHECKS],
-        gacha_by_chapter: Mapping[int, set[int]] | None = None,
-        ach_by_chapter: Mapping[int, set[int]] | None = None,
-        ach_in_logic: set[int] | None = None,
+    allowed: set[int],
+    missing: set[int],
+    checks: int = SLOT_DEFAULTS[slot_keys.MISSION_CHECKS],
+    gacha_by_chapter: Mapping[int, set[int]] | None = None,
+    ach_by_chapter: Mapping[int, set[int]] | None = None,
+    ach_in_logic: set[int] | None = None,
 ) -> dict[int, int]:
     out: dict[int, int] = {}
     for chapter in allowed:
-        pending = len(chapter_check_ids(chapter, checks, gacha_by_chapter,
-                                        ach_by_chapter, ach_in_logic) & missing)
+        pending = len(chapter_check_ids(chapter, checks, gacha_by_chapter, ach_by_chapter, ach_in_logic) & missing)
         if pending:
             out[chapter] = pending
     return out
 
 
-def chapter_check_ids(chapter: int, checks: int,
-                      gacha_by_chapter: Mapping[int, set[int]] | None = None,
-                      ach_by_chapter: Mapping[int, set[int]] | None = None,
-                      ach_in_logic: set[int] | None = None,
-                      ) -> set[int]:
+def chapter_check_ids(
+    chapter: int,
+    checks: int,
+    gacha_by_chapter: Mapping[int, set[int]] | None = None,
+    ach_by_chapter: Mapping[int, set[int]] | None = None,
+    ach_in_logic: set[int] | None = None,
+) -> set[int]:
     out = _check_ids(chapter, checks) | _reward_ids([chapter])
     if gacha_by_chapter:
         out |= gacha_by_chapter.get(chapter, set())
     if ach_by_chapter:
         anchored = ach_by_chapter.get(chapter, set())
-        out |= (anchored if ach_in_logic is None
-                else anchored & ach_in_logic)
+        out |= anchored if ach_in_logic is None else anchored & ach_in_logic
     return out
 
 
 def _check_ids(chapter: int, checks: int) -> set[int]:
     if chapter not in CHECK_CHAPTERS:
         return set()
-    return {LOCATION_NAME_TO_ID[locations.check_location_name(chapter, check_number)]
-            for check_number in range(1, checks + 1)}
+    return {
+        LOCATION_NAME_TO_ID[locations.check_location_name(chapter, check_number)]
+        for check_number in range(1, checks + 1)
+    }
 
 
 def _reward_ids(chapters: Iterable[int]) -> set[int]:
     won = set(chapters)
-    return {LOCATION_NAME_TO_ID[reward.name] for reward in REWARDS
-            if any(c in won for c in reward.triggers)}
+    return {LOCATION_NAME_TO_ID[reward.name] for reward in REWARDS if any(c in won for c in reward.triggers)}
 
 
-def chapters_in_logic_for_slot(state: ApState, slot: SlotData, allowed: set[int],
-                      chapter_costs: Mapping[int, int],
-                      ratio: float) -> set[int]:
+def chapters_in_logic_for_slot(
+    state: ApState, slot: SlotData, allowed: set[int], chapter_costs: Mapping[int, int], ratio: float
+) -> set[int]:
     starting_cost = slot_value(slot, slot_keys.STARTING_BORG_COST)
     cap = gf_cap_value(state, starting_cost) if state.gotcha_box else starting_cost
     return chapters_in_logic(allowed, chapter_costs, ratio, cap)
@@ -341,22 +342,21 @@ def gf_cap_value(state: ApState, starting_cost: int) -> int:
     return max(starting_cost, step)
 
 
-def chapters_in_logic(allowed: set[int], chapter_costs: Mapping[int, int],
-                      ratio: float, gf_cap: int) -> set[int]:
+def chapters_in_logic(allowed: set[int], chapter_costs: Mapping[int, int], ratio: float, gf_cap: int) -> set[int]:
     if ratio == UNLIMITED_RATIO:
         return set(allowed)
-    return {c for c in allowed
-            if _fits(chapter_costs.get(c, 0), ratio, gf_cap)}
+    return {c for c in allowed if _fits(chapter_costs.get(c, 0), ratio, gf_cap)}
 
 
 def _fits(cost: int, ratio: float, available: float) -> bool:
     return available >= FORCE_MAX or cost <= ratio * available
 
 
-def gacha_by_chapter_map(assignments: Mapping[int, int | None],
-                         slot: SlotData,
-                         extra: Mapping[int, Iterable[int]] | None = None,
-                         ) -> dict[int, set[int]]:
+def gacha_by_chapter_map(
+    assignments: Mapping[int, int | None],
+    slot: SlotData,
+    extra: Mapping[int, Iterable[int]] | None = None,
+) -> dict[int, set[int]]:
     chapters = chapter_pool_for_slot(slot)
     by_borg = gacha_location_map(assignments, slot, extra)
     out: dict[int, set[int]] = {}
@@ -369,21 +369,20 @@ def gacha_by_chapter_map(assignments: Mapping[int, int | None],
     return out
 
 
-def gacha_location_map(assignments: Mapping[int, int | None],
-                       slot: SlotData,
-                       extra: Mapping[int, Iterable[int]] | None = None,
-                       ) -> dict[int, list[int]]:
+def gacha_location_map(
+    assignments: Mapping[int, int | None],
+    slot: SlotData,
+    extra: Mapping[int, Iterable[int]] | None = None,
+) -> dict[int, list[int]]:
     chapters = chapter_pool_for_slot(slot)
     whole = bool(slot_value(slot, slot_keys.GACHA_CHECKS))
     out: dict[int, list[int]] = {}
     for borg_id in sorted(gacha_chapters(assignments, chapters, extra)):
-        out[borg_id] = [LOCATION_NAME_TO_ID[n]
-                        for n in locations.gacha_locations_for(borg_id, whole)]
+        out[borg_id] = [LOCATION_NAME_TO_ID[n] for n in locations.gacha_locations_for(borg_id, whole)]
     return out
 
 
-def won_location_ids(victories: Mapping[int, int],
-                     checks: int = SLOT_DEFAULTS[slot_keys.MISSION_CHECKS]) -> set[int]:
+def won_location_ids(victories: Mapping[int, int], checks: int = SLOT_DEFAULTS[slot_keys.MISSION_CHECKS]) -> set[int]:
     won = won_chapters(victories)
     out: set[int] = set()
     for chapter in won:

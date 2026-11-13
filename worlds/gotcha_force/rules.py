@@ -46,10 +46,8 @@ class OpeningPlan(NamedTuple):
     fits: bool
 
 
-def opening_items(world: GotchaForceWorld,
-                  taken: int) -> OpeningPlan | None:
-    owned = Counter(item.name for item in
-                    world.multiworld.precollected_items[world.player])
+def opening_items(world: GotchaForceWorld, taken: int) -> OpeningPlan | None:
+    owned = Counter(item.name for item in world.multiworld.precollected_items[world.player])
     room = locations.starting_spots(world, _open_chapters(world, owned)) - taken
     opening: list[str] = []
     spent = 0
@@ -60,8 +58,7 @@ def opening_items(world: GotchaForceWorld,
         free = locations.starting_spots(world, opened) - taken - spent
         if not closed or free >= COMFORTABLE_START:
             return OpeningPlan(opening, fits)
-        asks = sorted({tuple(chapter_missing_items(world, c, owned))
-                       for c in closed}, key=lambda a: (len(a), a))
+        asks = sorted({tuple(chapter_missing_items(world, c, owned)) for c in closed}, key=lambda a: (len(a), a))
         buy = _widest_opening(world, owned, asks)
         if len(buy) > free:
             return None
@@ -72,22 +69,17 @@ def opening_items(world: GotchaForceWorld,
         owned.update(buy)
 
 
-def _open_chapters(world: GotchaForceWorld,
-                   owned: Counter[str]) -> set[int]:
-    return {c for c in world.keys_map
-            if not chapter_missing_items(world, c, owned)}
+def _open_chapters(world: GotchaForceWorld, owned: Counter[str]) -> set[int]:
+    return {c for c in world.keys_map if not chapter_missing_items(world, c, owned)}
 
 
-def chapter_missing_items(world: GotchaForceWorld, chapter: int,
-                          owned: Counter[str]) -> list[str]:
+def chapter_missing_items(world: GotchaForceWorld, chapter: int, owned: Counter[str]) -> list[str]:
     opts = world.options
-    missing = [PROG_STORY_KEY] * (world.keys_map.get(chapter, 0)
-                                  - owned[PROG_STORY_KEY])
+    missing = [PROG_STORY_KEY] * (world.keys_map.get(chapter, 0) - owned[PROG_STORY_KEY])
     zone = items.area_access_item_name(CHAPTERS[chapter].tile)
     if opts.area_access_items and not owned[zone]:
         missing.append(zone)
-    needed = gf_cap_items_needed(world.chapter_costs.get(chapter, 0),
-                                 world.gf_ratio, world.starting_borg_cost)
+    needed = gf_cap_items_needed(world.chapter_costs.get(chapter, 0), world.gf_ratio, world.starting_borg_cost)
     if needed:
         if not owned[GOTCHA_BOX]:
             missing.append(GOTCHA_BOX)
@@ -113,18 +105,14 @@ def _seed_rotated_partner(eligible: Iterable[int], seed: int) -> int:
     return min(eligible, key=lambda i: (i - seed) % len(COMPANIONS))
 
 
-def _widest_opening(world: GotchaForceWorld, owned: Counter[str],
-                    asks: list[tuple[str, ...]]) -> tuple[str, ...]:
+def _widest_opening(world: GotchaForceWorld, owned: Counter[str], asks: list[tuple[str, ...]]) -> tuple[str, ...]:
     cheapest = [a for a in asks if len(a) == len(asks[0])]
-    return max(cheapest, key=lambda a: locations.starting_spots(
-        world, _open_chapters(world, owned + Counter(a))
-    ))
+    return max(cheapest, key=lambda a: locations.starting_spots(world, _open_chapters(world, owned + Counter(a))))
 
 
 def goal_items(world: GotchaForceWorld) -> frozenset[str]:
     names = {DEATH_CRYSTAL, GOTCHA_BOX, PROG_GF_CAP, PROG_G_RED}
-    names.update(items.area_access_item_name(CHAPTERS[chapter].tile)
-                 for chapter in world.goal_chapters)
+    names.update(items.area_access_item_name(CHAPTERS[chapter].tile) for chapter in world.goal_chapters)
     return frozenset(names)
 
 
@@ -132,13 +120,10 @@ def create_goal_event(world: GotchaForceWorld) -> None:
     _make_event(world, GOAL_ARENA_REGION, GOAL_EVENT_LOCATION, EVENT_VICTORY)
 
 
-def _make_event(world: GotchaForceWorld, region_name: str,
-                location_name: str, item_name: str) -> None:
+def _make_event(world: GotchaForceWorld, region_name: str, location_name: str, item_name: str) -> None:
     region = world.get_region(region_name)
     loc = GotchaForceLocation(world.player, location_name, None, region)
-    loc.place_locked_item(GotchaForceItem(
-        item_name, ItemClassification.progression, None, world.player
-    ))
+    loc.place_locked_item(GotchaForceItem(item_name, ItemClassification.progression, None, world.player))
     region.locations.append(loc)
 
 
@@ -230,12 +215,12 @@ def _set_gacha_rules(world: GotchaForceWorld, chapter_rules: ChapterRules) -> No
 
 def _set_achievement_rules(world: GotchaForceWorld, chapter_rules: ChapterRules) -> None:
     for spec in world.achievement_plan.specs:
-        world.set_rule(world.get_location(locations.achievement_location_name(spec)),
-                       achievement_rule(world, chapter_rules, spec))
+        world.set_rule(
+            world.get_location(locations.achievement_location_name(spec)), achievement_rule(world, chapter_rules, spec)
+        )
 
 
-def achievement_rule(world: GotchaForceWorld, chapter_rules: ChapterRules,
-                     spec: Spec) -> Rule:
+def achievement_rule(world: GotchaForceWorld, chapter_rules: ChapterRules, spec: Spec) -> Rule:
     spec = achievements.as_spec(spec)
     if spec.kind not in _ACHIEVEMENT_PARTS:
         raise ValueError(spec)
@@ -243,8 +228,7 @@ def achievement_rule(world: GotchaForceWorld, chapter_rules: ChapterRules,
     return _all(parts + _ACHIEVEMENT_PARTS[spec.kind](world, chapter_rules, spec))
 
 
-def _partner_style_parts(world: GotchaForceWorld, chapter_rules: ChapterRules,
-                         spec: CommanderSpec) -> list[Rule]:
+def _partner_style_parts(world: GotchaForceWorld, chapter_rules: ChapterRules, spec: CommanderSpec) -> list[Rule]:
     deployable = achievements.deployable_chapters(spec.commander, chapter_rules.keys())
     fixed = [c for c in deployable if CHAPTERS[c].partner_mode in PARTNER_FIXED]
     eligible = [c for c in deployable if CHAPTERS[c].partner_mode == PARTNER_CHOICE]
@@ -256,22 +240,19 @@ def _partner_style_parts(world: GotchaForceWorld, chapter_rules: ChapterRules,
     return [_any(ways), *_style_parts(world, chapter_rules, STYLES[spec.commander])]
 
 
-def _style_parts(world: GotchaForceWorld, chapter_rules: ChapterRules,
-                 tribes: Iterable[str]) -> list[Rule]:
+def _style_parts(world: GotchaForceWorld, chapter_rules: ChapterRules, tribes: Iterable[str]) -> list[Rule]:
     style = _style_rule(world, chapter_rules, tribes)
     return [] if style is None else [style]
 
 
-def _style_rule(world: GotchaForceWorld, chapter_rules: ChapterRules,
-                tribes: Iterable[str]) -> Rule | None:
+def _style_rule(world: GotchaForceWorld, chapter_rules: ChapterRules, tribes: Iterable[str]) -> Rule | None:
     wanted = set(tribes)
     if TRIBES.get(world.starting_borg) in wanted:
         return None
     if any(TRIBES.get(b) in wanted for b in world.box_borgs):
         return None
     if world.options.gacha_locations:
-        candidates = sorted(b for b in world.progression_borgs
-                            if TRIBES.get(b) in wanted)
+        candidates = sorted(b for b in world.progression_borgs if TRIBES.get(b) in wanted)
         return _any([_borg_complete(world, b) for b in candidates])
     chapters = achievements.farm_chapters(tuple(wanted), chapter_rules.keys(), world.enemy_assignments)
     return _any([chapter_rules[c] for c in chapters])
@@ -282,29 +263,26 @@ def _borg_complete(world: GotchaForceWorld, borg_id: int) -> Rule:
     return Has(its[0], count=len(its))
 
 
-def _commander_style_parts(world: GotchaForceWorld, chapter_rules: ChapterRules,
-                           spec: CommanderSpec) -> list[Rule]:
+def _commander_style_parts(world: GotchaForceWorld, chapter_rules: ChapterRules, spec: CommanderSpec) -> list[Rule]:
     rivals = achievements.rival_chapters(spec.commander, chapter_rules.keys())
     return [_missions_rule(chapter_rules, rivals), *_style_parts(world, chapter_rules, STYLES[spec.commander])]
 
 
-def _commander_style_all_parts(world: GotchaForceWorld, chapter_rules: ChapterRules,
-                               spec: CommanderChapterSpec) -> list[Rule]:
+def _commander_style_all_parts(
+    world: GotchaForceWorld, chapter_rules: ChapterRules, spec: CommanderChapterSpec
+) -> list[Rule]:
     return [chapter_rules[spec.chapter], *_style_parts(world, chapter_rules, STYLES[spec.commander])]
 
 
-def _theme_parts(world: GotchaForceWorld, chapter_rules: ChapterRules,
-                 spec: ChapterSpec) -> list[Rule]:
+def _theme_parts(world: GotchaForceWorld, chapter_rules: ChapterRules, spec: ChapterSpec) -> list[Rule]:
     return [chapter_rules[spec.chapter], *_style_parts(world, chapter_rules, (THEME_CHAPTERS[spec.chapter],))]
 
 
-def _anchored_parts(_world: GotchaForceWorld, chapter_rules: ChapterRules,
-                    spec: ChapterSpec) -> list[Rule]:
+def _anchored_parts(_world: GotchaForceWorld, chapter_rules: ChapterRules, spec: ChapterSpec) -> list[Rule]:
     return [chapter_rules[spec.chapter]]
 
 
-def _ace_duel_parts(world: GotchaForceWorld, chapter_rules: ChapterRules,
-                    spec: CommanderSpec) -> list[Rule]:
+def _ace_duel_parts(world: GotchaForceWorld, chapter_rules: ChapterRules, spec: CommanderSpec) -> list[Rule]:
     ace = SIGNATURE_BORGS[spec.commander]
     parts = [_missions_rule(chapter_rules, achievements.rival_chapters(spec.commander, chapter_rules.keys()))]
     if ace == world.starting_borg or ace in world.box_borgs:
@@ -315,8 +293,7 @@ def _ace_duel_parts(world: GotchaForceWorld, chapter_rules: ChapterRules,
     return [*parts, _missions_rule(chapter_rules, sources)]
 
 
-def _tribe_force_parts(world: GotchaForceWorld, chapter_rules: ChapterRules,
-                       spec: TribeSpec) -> list[Rule]:
+def _tribe_force_parts(world: GotchaForceWorld, chapter_rules: ChapterRules, spec: TribeSpec) -> list[Rule]:
     minimum = world.options.tribe_force_min_cost.value
     parts: list[Rule] = []
     caps_needed = gf_cap_items_needed(minimum, FORCE_EDITOR_RATIO, world.starting_borg_cost)
@@ -324,13 +301,11 @@ def _tribe_force_parts(world: GotchaForceWorld, chapter_rules: ChapterRules,
         parts.append(Has(PROG_GF_CAP, count=caps_needed))
     if world.options.gacha_locations:
         witnesses = achievements.tribe_force_witnesses(
-            spec.tribe, world.starting_borg, world.box_borgs,
-            world.achievement_plan.achievement_borgs, minimum
+            spec.tribe, world.starting_borg, world.box_borgs, world.achievement_plan.achievement_borgs, minimum
         )
         return parts + [_borg_complete(world, b) for b in witnesses]
     witness_chapters = achievements.tribe_force_witness_chapters(
-        spec.tribe, chapter_rules.keys(), world.enemy_assignments,
-        world.starting_borg, world.box_borgs, minimum
+        spec.tribe, chapter_rules.keys(), world.enemy_assignments, world.starting_borg, world.box_borgs, minimum
     )
     return parts + [chapter_rules[c] for c in witness_chapters]
 
@@ -349,6 +324,4 @@ _ACHIEVEMENT_PARTS: dict[str, Callable[[GotchaForceWorld, ChapterRules, Any], li
 
 def goal_rule(world: GotchaForceWorld) -> Rule:
     variants = [_all(_access_parts(world, chapter)) for chapter in world.goal_chapters]
-    return (Has(DEATH_CRYSTAL,
-                count=world.options.death_crystals_required.value)
-            & _any(variants))
+    return Has(DEATH_CRYSTAL, count=world.options.death_crystals_required.value) & _any(variants)

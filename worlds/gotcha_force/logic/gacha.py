@@ -19,14 +19,14 @@ UNSCALED_RATE = 1
 EXHAUSTED = (UNOBTAINABLE,) * THRESHOLD_COUNT
 
 
-def gacha_chapters(assignments: Mapping[int, int | None],
-                   chapter_pool: Iterable[int],
-                   extra: Mapping[int, Iterable[int]] | None = None,
-                   ) -> dict[int, set[int]]:
+def gacha_chapters(
+    assignments: Mapping[int, int | None],
+    chapter_pool: Iterable[int],
+    extra: Mapping[int, Iterable[int]] | None = None,
+) -> dict[int, set[int]]:
     out: dict[int, set[int]] = {}
     for chapter in chapter_pool:
-        finals = [assignments.get(addr, borg_id)
-                  for addr, borg_id, *_ in SPAWNS.get(chapter, ())]
+        finals = [assignments.get(addr, borg_id) for addr, borg_id, *_ in SPAWNS.get(chapter, ())]
         if extra:
             finals.extend(extra.get(chapter, ()))
         for final in finals:
@@ -44,16 +44,11 @@ def _pays_out(register: GachaRegister) -> bool:
     return any(threshold >= 0 for threshold in register.thresholds)
 
 
-def thresholds_for(borg_id: int, vanilla: tuple[int, ...],
-                   rate: int) -> tuple[int, ...]:
-    return scaled_thresholds(
-        vanilla, rate,
-        DEATH_BORG_NORMALIZER if is_death_borg(borg_id) else 1
-    )
+def thresholds_for(borg_id: int, vanilla: tuple[int, ...], rate: int) -> tuple[int, ...]:
+    return scaled_thresholds(vanilla, rate, DEATH_BORG_NORMALIZER if is_death_borg(borg_id) else 1)
 
 
-def scaled_thresholds(vanilla: tuple[int, ...], rate: int,
-                      normalizer: int = 1) -> tuple[int, ...]:
+def scaled_thresholds(vanilla: tuple[int, ...], rate: int, normalizer: int = 1) -> tuple[int, ...]:
     div = max(rate, MIN_DIVISOR) * max(normalizer, MIN_DIVISOR)
     return tuple(u if u < 0 else max(MIN_THRESHOLD, u // div) for u in vanilla)
 

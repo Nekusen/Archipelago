@@ -33,10 +33,15 @@ COMMANDERS_FOLD: Final = "commanders"
 BORGS_FOLD: Final = "borgs"
 
 
-def inventory_groups(ap_state: ApState, slot: SlotData, found: int, total: int,
-                     ) -> list[InventoryGroup]:
-    groups = [InventoryGroup(PROGRESS_FOLD, "Progress", open=True,
-                             lines=tuple(progress_lines(ap_state, slot, found, total)))]
+def inventory_groups(
+    ap_state: ApState,
+    slot: SlotData,
+    found: int,
+    total: int,
+) -> list[InventoryGroup]:
+    groups = [
+        InventoryGroup(PROGRESS_FOLD, "Progress", open=True, lines=tuple(progress_lines(ap_state, slot, found, total)))
+    ]
     zones = zone_group(ap_state, slot)
     if zones is not None:
         groups.append(zones)
@@ -45,8 +50,12 @@ def inventory_groups(ap_state: ApState, slot: SlotData, found: int, total: int,
     return groups
 
 
-def progress_lines(ap_state: ApState, slot: SlotData, found: int, total: int,
-                   ) -> list[tuple[int, str]]:
+def progress_lines(
+    ap_state: ApState,
+    slot: SlotData,
+    found: int,
+    total: int,
+) -> list[tuple[int, str]]:
     goal = " / ".join(tracker.chapter_label(c) for c in logic.slot_value(slot, slot_keys.GOAL_CHAPTERS))
     lines = [(LINE_INFO, f"Goal: {goal}"), (LINE_INFO, f"Checks found: {count_text(found, total)}")]
     needed = logic.slot_value(slot, slot_keys.DEATH_CRYSTALS_REQUIRED)
@@ -54,8 +63,9 @@ def progress_lines(ap_state: ApState, slot: SlotData, found: int, total: int,
     pool_note = f" ({in_pool} in the pool)" if in_pool else ""
     lines.append((LINE_INFO, f"Death Crystals: {count_text(ap_state.crystals, needed)} needed{pool_note}"))
     keys = story_keys_total(slot)
-    lines.append((LINE_INFO, f"Story Keys: {count_text(ap_state.story_keys, keys)}"
-                  if keys else "Story Keys: none in this seed"))
+    lines.append(
+        (LINE_INFO, f"Story Keys: {count_text(ap_state.story_keys, keys)}" if keys else "Story Keys: none in this seed")
+    )
     lines.append((LINE_INFO, _gf_cap_line(ap_state, slot)))
     lines.append(_gotcha_box_line(ap_state, slot))
     g_red = min(ap_state.g_red, G_RED_COUNT)
@@ -71,15 +81,18 @@ def count_text(have: int, total: int) -> str:
 
 
 def story_keys_total(slot: SlotData) -> int:
-    return max(progression.keys_needed_by_chapter(logic.chapter_pool_for_slot(slot),
-            logic.slot_value(slot, slot_keys.STORY_KEYS)).values(), default=0)
+    return max(
+        progression.keys_needed_by_chapter(
+            logic.chapter_pool_for_slot(slot), logic.slot_value(slot, slot_keys.STORY_KEYS)
+        ).values(),
+        default=0,
+    )
 
 
 def _gf_cap_line(ap_state: ApState, slot: SlotData) -> str:
     starting_cost = logic.slot_value(slot, slot_keys.STARTING_BORG_COST)
     caps = min(ap_state.gf_caps, GF_CAP_COUNT)
-    line = (f"GF Energy Cap: {logic.gf_cap_value(ap_state, starting_cost)} "
-            f"({count_text(caps, GF_CAP_COUNT)} caps")
+    line = f"GF Energy Cap: {logic.gf_cap_value(ap_state, starting_cost)} ({count_text(caps, GF_CAP_COUNT)} caps"
     if caps and not ap_state.gotcha_box:
         line += f"; the logic counts {starting_cost} until the Gotcha Box"
     return f"{line})"
@@ -99,12 +112,12 @@ def zone_group(ap_state: ApState, slot: SlotData) -> InventoryGroup | None:
     present = {CHAPTERS[c].tile for c in logic.chapter_pool_for_slot(slot)}
     present |= {CHAPTERS[c].tile for c in logic.slot_value(slot, slot_keys.GOAL_CHAPTERS)}
     start = set(logic.slot_value(slot, slot_keys.START_AREAS))
-    lines = tuple((LINE_HAVE if tile in ap_state.areas else LINE_MISSING,
-                   ZONES[tile] + (" (start)" if tile in start else ""))
-                  for tile in sorted(present))
+    lines = tuple(
+        (LINE_HAVE if tile in ap_state.areas else LINE_MISSING, ZONES[tile] + (" (start)" if tile in start else ""))
+        for tile in sorted(present)
+    )
     owned = len(present & ap_state.areas)
-    return InventoryGroup(ZONES_FOLD, f"Zones ({count_text(owned, len(present))})",
-                          open=True, lines=lines)
+    return InventoryGroup(ZONES_FOLD, f"Zones ({count_text(owned, len(present))})", open=True, lines=lines)
 
 
 def commander_group(ap_state: ApState, slot: SlotData) -> InventoryGroup:

@@ -39,8 +39,12 @@ _ORDER_GACHA: Final = 2
 ACHIEVEMENT_TILE: Final = -1
 ACHIEVEMENT_SECTION_TITLE: Final = "Achievements"
 
-FREE_ACHIEVEMENT_TYPES: Final = (achievements.TYPE_PARTNER_STYLE, achievements.TYPE_COMMANDER_STYLE,
-                                 achievements.TYPE_TRIBE_FORCE, achievements.TYPE_ACE_DUEL)
+FREE_ACHIEVEMENT_TYPES: Final = (
+    achievements.TYPE_PARTNER_STYLE,
+    achievements.TYPE_COMMANDER_STYLE,
+    achievements.TYPE_TRIBE_FORCE,
+    achievements.TYPE_ACE_DUEL,
+)
 
 GO_MODE_GREEN: Final = "20ff20"
 GO_MODE_RED: Final = "cf1010"
@@ -65,15 +69,17 @@ class TrackerSection(NamedTuple):
     rows: list[MissionRow]
 
 
-def in_logic_view(ctx: GotchaForceContext,
-                  ) -> tuple[SlotData, ApState, set[int], set[int]] | None:
+def in_logic_view(
+    ctx: GotchaForceContext,
+) -> tuple[SlotData, ApState, set[int], set[int]] | None:
     slot = ctx.slot_data
     allowed = ctx.last_allowed
     if slot is None or allowed is None:
         return None
     ap_state = ApState.from_item_ids(i.item for i in ctx.items_received)
-    in_logic = client_logic.chapters_in_logic_for_slot(ap_state, slot, allowed,
-                                 ctx.chapter_costs, client_logic.gf_ratio_for_slot(slot))
+    in_logic = client_logic.chapters_in_logic_for_slot(
+        ap_state, slot, allowed, ctx.chapter_costs, client_logic.gf_ratio_for_slot(slot)
+    )
     return slot, ap_state, allowed, in_logic
 
 
@@ -98,24 +104,25 @@ def hide_gacha_spoilers(names: list[str]) -> list[str]:
     gacha = sum(1 for n in names if n.startswith(GACHA_PREFIX))
     if not gacha:
         return names
-    return ([n for n in names if not n.startswith(GACHA_PREFIX)]
-            + [gacha_summary(gacha)])
+    return [n for n in names if not n.startswith(GACHA_PREFIX)] + [gacha_summary(gacha)]
 
 
 def gacha_summary(count: int) -> str:
     return f"Gacha: {count} check{'s' if count != 1 else ''} left"
 
 
-def tracker_rows(allowed: set[int], in_logic: set[int],
-                 missing: set[int],
-                 checks: int = SLOT_DEFAULTS[slot_keys.MISSION_CHECKS],
-                 gacha_by_chapter: Mapping[int, set[int]] | None = None,
-                 show_out_of_logic: bool = True,
-                 show_unavailable: bool = False,
-                 ach_by_chapter: Mapping[int, set[int]] | None = None,
-                 extra_sections: list[TrackerSection] | None = None,
-                 ach_in_logic: set[int] | None = None,
-                 ) -> list[TrackerSection]:
+def tracker_rows(
+    allowed: set[int],
+    in_logic: set[int],
+    missing: set[int],
+    checks: int = SLOT_DEFAULTS[slot_keys.MISSION_CHECKS],
+    gacha_by_chapter: Mapping[int, set[int]] | None = None,
+    show_out_of_logic: bool = True,
+    show_unavailable: bool = False,
+    ach_by_chapter: Mapping[int, set[int]] | None = None,
+    extra_sections: list[TrackerSection] | None = None,
+    ach_in_logic: set[int] | None = None,
+) -> list[TrackerSection]:
     hidden = {ROW_OUT_OF_LOGIC} if not show_out_of_logic else set()
     if not show_unavailable:
         hidden.add(ROW_UNAVAILABLE)
@@ -128,8 +135,9 @@ def tracker_rows(allowed: set[int], in_logic: set[int],
                 continue
             ids = client_logic.chapter_check_ids(chapter, checks, gacha_by_chapter, ach_by_chapter) & missing
             anchored = ach_by_chapter.get(chapter, set()) if ach_by_chapter else set()
-            row = _mission_row(chapter, state, ids, anchored,
-                               ach_in_logic if ach_by_chapter else None, show_out_of_logic)
+            row = _mission_row(
+                chapter, state, ids, anchored, ach_in_logic if ach_by_chapter else None, show_out_of_logic
+            )
             if row is not None:
                 missions.append(row)
         if missions:
@@ -147,8 +155,9 @@ def _row_state(chapter: int, allowed: set[int], in_logic: set[int]) -> int:
     return ROW_UNAVAILABLE
 
 
-def _mission_row(chapter: int, state: int, ids: set[int], anchored: set[int],
-                 ach_in_logic: set[int] | None, show_out_of_logic: bool) -> MissionRow | None:
+def _mission_row(
+    chapter: int, state: int, ids: set[int], anchored: set[int], ach_in_logic: set[int] | None, show_out_of_logic: bool
+) -> MissionRow | None:
     out_of_logic: set[int] = set()
     if ach_in_logic is not None and state == ROW_IN_LOGIC:
         out_of_logic = (anchored & ids) - ach_in_logic
@@ -165,8 +174,10 @@ def _mission_row(chapter: int, state: int, ids: set[int], anchored: set[int],
 
 def _row_names(ids: set[int], out_of_logic: set[int]) -> list[str]:
     marked = {LOCATION_ID_TO_NAME[i] for i in out_of_logic}
-    return [n + OUT_OF_LOGIC_MARK if n in marked else n
-            for n in sorted((LOCATION_ID_TO_NAME[i] for i in ids), key=_tracker_order)]
+    return [
+        n + OUT_OF_LOGIC_MARK if n in marked else n
+        for n in sorted((LOCATION_ID_TO_NAME[i] for i in ids), key=_tracker_order)
+    ]
 
 
 def _tracker_order(name: str) -> tuple[int, str]:
@@ -179,9 +190,12 @@ def _tracker_order(name: str) -> tuple[int, str]:
     return kind, name
 
 
-def achievement_sections(specs: Iterable[Spec], in_logic_ids: set[int],
-                         missing: set[int], show_out_of_logic: bool = True,
-                         ) -> list[TrackerSection]:
+def achievement_sections(
+    specs: Iterable[Spec],
+    in_logic_ids: set[int],
+    missing: set[int],
+    show_out_of_logic: bool = True,
+) -> list[TrackerSection]:
     by_kind: dict[str, list[tuple[str, bool]]] = {kind: [] for kind in FREE_ACHIEVEMENT_TYPES}
     for raw_spec in specs:
         spec = achievements.as_spec(raw_spec)

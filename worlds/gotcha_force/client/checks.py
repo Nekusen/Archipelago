@@ -75,8 +75,10 @@ class CheckStage(Stage):
         return pointer if stage.in_mem1(pointer) else None
 
     def _snapshot_battle(self) -> None:
-        entity_ptrs = [self.dolphin.read_u32(addresses.SLOT_ENTITY_PTRS + addresses.POINTER_SIZE * slot) or 0
-                       for slot in range(addresses.BATTLE_SLOTS)]
+        entity_ptrs = [
+            self.dolphin.read_u32(addresses.SLOT_ENTITY_PTRS + addresses.POINTER_SIZE * slot) or 0
+            for slot in range(addresses.BATTLE_SLOTS)
+        ]
         player_entity = entity_ptrs[PLAYER_BATTLE_SLOT]
         if not stage.in_mem1(player_entity):
             return
@@ -94,11 +96,10 @@ class CheckStage(Stage):
         losses = self._own_losses(snapshot.entity_ptrs[PLAYER_BATTLE_SLOT])
         self._battle_result = BattleResult(
             finisher_slot=snapshot.entity_ptrs.index(finisher) if finisher in snapshot.entity_ptrs else None,
-            own_losses=losses if losses is not None else snapshot.own_losses
+            own_losses=losses if losses is not None else snapshot.own_losses,
         )
 
-    def _detect_achievements(self, slot: client_logic.SlotData,
-                             victories: dict[int, int]) -> None:
+    def _detect_achievements(self, slot: client_logic.SlotData, victories: dict[int, int]) -> None:
         ctx = self.ctx
         specs = ctx.achievement_specs
         if not specs:
@@ -116,9 +117,14 @@ class CheckStage(Stage):
         names = [client_logic.borg_name(i) if i in BORGS else f"{i:#06x}" for i in force_ids]
         for chapter in newly_won:
             earned = achievements.achievements_met(
-                specs, chapter, partner, force_ids, cost, minimum,
+                specs,
+                chapter,
+                partner,
+                force_ids,
+                cost,
+                minimum,
                 finisher_slot=result.finisher_slot,
-                own_losses=result.own_losses
+                own_losses=result.own_losses,
             )
             logger.info(
                 f"[achievement] Chapter {chapter:03d} won with partner "
@@ -138,8 +144,11 @@ class CheckStage(Stage):
         if teams is None or quotas is None or commanders is None:
             return 0
         for slot in range(addresses.BATTLE_SLOTS):
-            if (teams[slot] == addresses.TEAM_PLAYER_SIDE and quotas[slot] > 0
-                    and addresses.FIRST_COMMANDER <= commanders[slot] <= addresses.N_COMMANDERS):
+            if (
+                teams[slot] == addresses.TEAM_PLAYER_SIDE
+                and quotas[slot] > 0
+                and addresses.FIRST_COMMANDER <= commanders[slot] <= addresses.N_COMMANDERS
+            ):
                 return commanders[slot]
         return 0
 
@@ -210,13 +219,15 @@ class CheckStage(Stage):
         ids = {struct.unpack_from(">H", block, entry_len * entry)[0] for entry in range(slots)}
         return {borg_id for borg_id in ids if not client_logic.is_empty_entry(borg_id)}
 
-    def _target_thresholds(self, borg: int, vanilla: tuple[int, ...], rate: int,
-                           owned: set[int] | None) -> tuple[int, ...]:
+    def _target_thresholds(
+        self, borg: int, vanilla: tuple[int, ...], rate: int, owned: set[int] | None
+    ) -> tuple[int, ...]:
         if owned is not None:
             return vanilla if borg in owned else gacha.thresholds_for(borg, vanilla, rate)
         locations = self.ctx.gacha_map.get(borg)
-        if not locations or all(location in self.ctx.checked_locations
-                                or location in self.gacha_pending for location in locations):
+        if not locations or all(
+            location in self.ctx.checked_locations or location in self.gacha_pending for location in locations
+        ):
             return EXHAUSTED
         return gacha.thresholds_for(borg, vanilla, rate)
 

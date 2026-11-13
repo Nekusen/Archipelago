@@ -85,14 +85,16 @@ class _AchievementInputs(NamedTuple):
 
 class GotchaForceWeb(WebWorld):
     option_groups = OPTION_GROUPS
-    tutorials = [Tutorial(  # noqa: RUF012
-        "Multiworld Setup Guide",
-        "A guide to setting up Gotcha Force for Archipelago.",
-        "English",
-        "setup_en.md",
-        "setup/en",
-        ["Nekusen"],
-    )]
+    tutorials = [  # noqa: RUF012
+        Tutorial(
+            "Multiworld Setup Guide",
+            "A guide to setting up Gotcha Force for Archipelago.",
+            "English",
+            "setup_en.md",
+            "setup/en",
+            ["Nekusen"],
+        )
+    ]
 
 
 class GotchaForceWorld(World):
@@ -165,13 +167,10 @@ class GotchaForceWorld(World):
         else:
             self.enemy_seed = self.random.getrandbits(ENEMY_SEED_BITS)
         self.enemy_plan = enemies.plan_enemies(
-            self.enemy_seed, opts.enemy_randomization.value,
-            opts.commander_ace_borgs.value, opts.boss_borgs.value
+            self.enemy_seed, opts.enemy_randomization.value, opts.commander_ace_borgs.value, opts.boss_borgs.value
         )
         self.enemy_assignments = self.enemy_plan.assignments
-        self.chapter_costs = enemies.chapter_costs(
-            self.enemy_assignments, self.enemy_plan.inserts
-        )
+        self.chapter_costs = enemies.chapter_costs(self.enemy_assignments, self.enemy_plan.inserts)
 
     def _plan_missions(self, opts: GotchaForceOptions, tracker_slot: TrackerSlot) -> None:
         if tracker_slot is not None:
@@ -196,13 +195,10 @@ class GotchaForceWorld(World):
         self.goal_chapters = self._draw_goal_chapters(opts)
         self.mission_pool = opts.mission_pool.value
         plando = self._plando_chapters(opts)
-        self.variant_picks = progression.pick_variants(
-            self.goal_chapters, self.mission_pool, self.random, plando
-        )
+        self.variant_picks = progression.pick_variants(self.goal_chapters, self.mission_pool, self.random, plando)
         if self.mission_pool == progression.POOL_CUSTOM:
             self.custom_chapters = progression.resolve_custom_chapters(
-                self.goal_chapters, self.variant_picks, plando,
-                opts.custom_mission_count.value, self.random
+                self.goal_chapters, self.variant_picks, plando, opts.custom_mission_count.value, self.random
             )
         else:
             self.custom_chapters = ()
@@ -226,8 +222,7 @@ class GotchaForceWorld(World):
     def _plan_gacha(self, opts: GotchaForceOptions) -> None:
         if opts.gacha_locations:
             self.gacha_chapters = gacha.gacha_chapters(
-                self.enemy_assignments, self.chapters_in_pool,
-                enemies.inserted_borgs(self.enemy_plan.inserts)
+                self.enemy_assignments, self.chapters_in_pool, enemies.inserted_borgs(self.enemy_plan.inserts)
             )
         else:
             self.gacha_chapters = {}
@@ -242,8 +237,7 @@ class GotchaForceWorld(World):
         else:
             self.starting_borg = self.random.choice(self._starting_borg_candidates(opts, first_batch))
             self.starting_borg_cost = COSTS[self.starting_borg]
-        in_logic = [c for c in first_batch
-                    if self._in_logic_with_cap(c, self.starting_borg_cost)]
+        in_logic = [c for c in first_batch if self._in_logic_with_cap(c, self.starting_borg_cost)]
         if not in_logic:
             raise OptionError(
                 f"Gotcha Force ({self.player_name}): no chapter of the "
@@ -254,16 +248,16 @@ class GotchaForceWorld(World):
         return in_logic
 
     def _chapters_open_at_start(self) -> list[int]:
-        return sorted(c for c, keys in self.keys_map.items()
-                      if keys == 0 and progression.partner_requirement_met(c, ()))
+        return sorted(
+            c for c, keys in self.keys_map.items() if keys == 0 and progression.partner_requirement_met(c, ())
+        )
 
     def _starting_borg_candidates(self, opts: GotchaForceOptions, first_batch: list[int]) -> list[int]:
         floor = STARTING_BORG_MIN_COST[opts.gf_logic_difficulty.value]
         candidates = [b for b in RANDOMIZABLE if COSTS[b] >= floor]
         if self.gf_ratio != UNLIMITED_RATIO:
             cost_to_open = self._cost_to_open_min_chapters(first_batch)
-            candidates = [b for b in candidates
-                          if COSTS[b] * self.gf_ratio >= cost_to_open]
+            candidates = [b for b in candidates if COSTS[b] * self.gf_ratio >= cost_to_open]
         if not candidates:
             return [max(RANDOMIZABLE, key=lambda b: COSTS[b])]
         return sorted(candidates)
@@ -306,7 +300,7 @@ class GotchaForceWorld(World):
                 rng=inputs.rng,
                 forced_borgs=inputs.forced_borgs,
                 forced_ally_caps=inputs.forced_ally_chapters,
-                tribes=inputs.tribes
+                tribes=inputs.tribes,
             )
         else:
             self.achievement_plan = achievements.EMPTY_PLAN
@@ -324,13 +318,14 @@ class GotchaForceWorld(World):
             tribes=tuple(tracker_slot.get(slot_keys.TRIBE_FORCE_TRIBES, achievements.TRIBE_ORDER)),
             rng=None,
             forced_borgs=tuple(int(b) for b in tracker_slot.get(slot_keys.ACHIEVEMENT_BORGS, ())),
-            forced_ally_chapters=tuple(int(c) for c in tracker_slot.get(slot_keys.ALLY_FINISHER_CHAPTERS, ()))
+            forced_ally_chapters=tuple(int(c) for c in tracker_slot.get(slot_keys.ALLY_FINISHER_CHAPTERS, ())),
         )
 
     def _achievement_inputs_from_options(self, opts: GotchaForceOptions) -> _AchievementInputs:
         if not opts.achievements:
-            return _AchievementInputs((), bool(opts.gacha_locations), opts.tribe_force_min_cost.value,
-                                      (), self.random, (), ())
+            return _AchievementInputs(
+                (), bool(opts.gacha_locations), opts.tribe_force_min_cost.value, (), self.random, (), ()
+            )
         return _AchievementInputs(
             types=tuple(sorted(opts.achievement_types.value)),
             gacha_on=bool(opts.gacha_locations),
@@ -338,11 +333,10 @@ class GotchaForceWorld(World):
             tribes=achievements.canonical_tribes(opts.tribe_force_tribes.value),
             rng=self.random,
             forced_borgs=(),
-            forced_ally_chapters=()
+            forced_ally_chapters=(),
         )
 
-    def _pick_start_areas(self, opts: GotchaForceOptions, tracker_slot: TrackerSlot,
-                          in_logic: list[int]) -> None:
+    def _pick_start_areas(self, opts: GotchaForceOptions, tracker_slot: TrackerSlot, in_logic: list[int]) -> None:
         if tracker_slot is not None:
             self.start_areas = set(tracker_slot.get(slot_keys.START_AREAS, ()))
         elif opts.area_access_items:
@@ -366,13 +360,9 @@ class GotchaForceWorld(World):
 
     def _push_starting_kit(self) -> None:
         for tile in sorted(self.start_areas):
-            self.multiworld.push_precollected(
-                self.create_item(items.area_access_item_name(tile))
-            )
+            self.multiworld.push_precollected(self.create_item(items.area_access_item_name(tile)))
         if self.box_unlocked:
-            self.multiworld.push_precollected(
-                self.create_item(items.GOTCHA_BOX)
-            )
+            self.multiworld.push_precollected(self.create_item(items.GOTCHA_BOX))
         for _ in range(items.g_red_steps(self.starting_borg)):
             self.multiworld.push_precollected(self.create_item(items.PROG_G_RED))
 
@@ -383,9 +373,7 @@ class GotchaForceWorld(World):
             self.progression_borgs = self._draw_progression_borgs()
         else:
             self.progression_borgs = ()
-        self.progression_borg_items = items.borg_pool_item_names(
-            self.progression_borgs, items.uses_fragments(opts)
-        )
+        self.progression_borg_items = items.borg_pool_item_names(self.progression_borgs, items.uses_fragments(opts))
 
     def _draw_progression_borgs(self) -> tuple[int, ...]:
         witnesses = set(self.achievement_plan.achievement_borgs)
@@ -410,13 +398,13 @@ class GotchaForceWorld(World):
             )
         self._add_local_early_items(early + plan.items)
 
-    def _early_borgs_that_leave_room(self, candidates: list[int], count: int,
-                                     fragments: bool) -> tuple[list[str], rules.OpeningPlan | None]:
+    def _early_borgs_that_leave_room(
+        self, candidates: list[int], count: int, fragments: bool
+    ) -> tuple[list[str], rules.OpeningPlan | None]:
         early: list[str] = []
         plan: rules.OpeningPlan | None = None
         for early_count in range(min(count, len(candidates)), -1, -1):
-            early = [name for borg in candidates[:early_count]
-                     for name in items.borg_pool_items(borg, fragments)]
+            early = [name for borg in candidates[:early_count] for name in items.borg_pool_items(borg, fragments)]
             plan = rules.opening_items(self, len(early))
             if plan is not None and plan.fits:
                 break
@@ -424,8 +412,7 @@ class GotchaForceWorld(World):
 
     def _promoted_by_piece_count(self, fragments: bool) -> list[int]:
         return sorted(
-            self.progression_borgs,
-            key=lambda b: (len(items.borg_pool_items(b, fragments)), self.random.random())
+            self.progression_borgs, key=lambda b: (len(items.borg_pool_items(b, fragments)), self.random.random())
         )
 
     @staticmethod
@@ -454,9 +441,13 @@ class GotchaForceWorld(World):
         rules.set_all_rules(self)
 
     @override
-    def fill_hook(self, progitempool: list[Item], usefulitempool: list[Item],
-                  filleritempool: list[Item],
-                  fill_locations: list[Location]) -> None:
+    def fill_hook(
+        self,
+        progitempool: list[Item],
+        usefulitempool: list[Item],
+        filleritempool: list[Item],
+        fill_locations: list[Location],
+    ) -> None:
         opt = self.options.accessibility
         if opt != opt.option_minimal:
             return

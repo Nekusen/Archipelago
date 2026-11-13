@@ -4,9 +4,11 @@ import struct
 
 from ..data import addresses
 
-DME_MISSING = ("dolphin-memory-engine is missing: Archipelago 0.6.7 or newer "
-               "includes it; from a source checkout run ModuleUpdate or "
-               "pip install dolphin-memory-engine")
+DME_MISSING = (
+    "dolphin-memory-engine is missing: Archipelago 0.6.7 or newer "
+    "includes it; from a source checkout run ModuleUpdate or "
+    "pip install dolphin-memory-engine"
+)
 
 
 class DolphinAdapter:

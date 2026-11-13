@@ -45,12 +45,16 @@ class _LogicView:
     owned_tribes: set[str | None]
 
     @classmethod
-    def of(cls, state: ApState, slot: SlotData, in_logic: set[int],
-           assignments: Mapping[int, int | None]) -> _LogicView:
+    def of(
+        cls, state: ApState, slot: SlotData, in_logic: set[int], assignments: Mapping[int, int | None]
+    ) -> _LogicView:
         starting_borg = int(slot_value(slot, slot_keys.STARTING_BORG))
         box_borgs = tuple(slot_value(slot, slot_keys.BOX_BORGS))
         return cls(
-            state, slot, in_logic, assignments,
+            state,
+            slot,
+            in_logic,
+            assignments,
             gacha_on=bool(slot_value(slot, slot_keys.GACHA_LOCATIONS)),
             starting_borg=starting_borg,
             box_borgs=box_borgs,
@@ -58,7 +62,7 @@ class _LogicView:
             min_cost=int(slot_value(slot, slot_keys.TRIBE_FORCE_MIN_COST)),
             starting_cost=int(slot_value(slot, slot_keys.STARTING_BORG_COST)),
             recruited=unlocked_partners(state),
-            owned_tribes={TRIBES.get(starting_borg)} | {TRIBES.get(b) for b in box_borgs}
+            owned_tribes={TRIBES.get(starting_borg)} | {TRIBES.get(b) for b in box_borgs},
         )
 
     def from_start_or_box(self, borg_id: int) -> bool:
@@ -69,10 +73,10 @@ class _LogicView:
         if wanted & self.owned_tribes:
             return True
         if self.gacha_on:
-            return any(self.borg_complete(b) for b in self.progression_borgs
-                       if TRIBES.get(b) in wanted)
-        return any(c in self.in_logic
-                   for c in achievements.farm_chapters(tuple(wanted), self.in_logic, self.assignments))
+            return any(self.borg_complete(b) for b in self.progression_borgs if TRIBES.get(b) in wanted)
+        return any(
+            c in self.in_logic for c in achievements.farm_chapters(tuple(wanted), self.in_logic, self.assignments)
+        )
 
     def borg_complete(self, borg_id: int) -> bool:
         if borg_id in self.state.borgs:
@@ -80,9 +84,10 @@ class _LogicView:
         return self.state.fragments.get(borg_id, 0) >= BORGS[borg_id].fragments
 
 
-def achievement_plan_for_slot(slot: SlotData,
-                              assignments: Mapping[int, int | None],
-                              ) -> achievements.AchievementPlan:
+def achievement_plan_for_slot(
+    slot: SlotData,
+    assignments: Mapping[int, int | None],
+) -> achievements.AchievementPlan:
     if not slot_value(slot, slot_keys.ACHIEVEMENTS):
         return achievements.EMPTY_PLAN
     return achievements.plan_achievements(
@@ -96,12 +101,13 @@ def achievement_plan_for_slot(slot: SlotData,
         rng=None,
         forced_borgs=tuple(slot_value(slot, slot_keys.ACHIEVEMENT_BORGS)),
         forced_ally_caps=tuple(slot_value(slot, slot_keys.ALLY_FINISHER_CHAPTERS)),
-        tribes=tuple(slot_value(slot, slot_keys.TRIBE_FORCE_TRIBES))
+        tribes=tuple(slot_value(slot, slot_keys.TRIBE_FORCE_TRIBES)),
     )
 
 
-def achievements_by_chapter_map(specs: Iterable[Spec],
-                                ) -> dict[int, set[int]]:
+def achievements_by_chapter_map(
+    specs: Iterable[Spec],
+) -> dict[int, set[int]]:
     out: dict[int, set[int]] = {}
     for raw_spec in specs:
         spec = achievements.as_spec(raw_spec)
@@ -116,9 +122,9 @@ def achievement_id(spec: Spec) -> int:
     return LOCATION_NAME_TO_ID[achievement_location_name(spec)]
 
 
-def achievements_in_logic(specs: Iterable[Spec], state: ApState,
-                          slot: SlotData, in_logic: set[int],
-                          assignments: Mapping[int, int | None]) -> set[int]:
+def achievements_in_logic(
+    specs: Iterable[Spec], state: ApState, slot: SlotData, in_logic: set[int], assignments: Mapping[int, int | None]
+) -> set[int]:
     specs = [achievements.as_spec(spec) for spec in specs]
     if not specs:
         return set()
@@ -147,8 +153,7 @@ def _partner_style_in_logic(view: _LogicView, spec: CommanderSpec) -> bool:
 
 
 def _commander_style_in_logic(view: _LogicView, spec: CommanderSpec) -> bool:
-    return (bool(achievements.rival_chapters(spec.commander, view.in_logic))
-            and view.style_ok(STYLES[spec.commander]))
+    return bool(achievements.rival_chapters(spec.commander, view.in_logic)) and view.style_ok(STYLES[spec.commander])
 
 
 def _commander_style_all_in_logic(view: _LogicView, spec: CommanderChapterSpec) -> bool:
@@ -166,9 +171,10 @@ def _ace_duel_in_logic(view: _LogicView, spec: CommanderSpec) -> bool:
     elif view.gacha_on:
         ace_owned = view.borg_complete(ace)
     else:
-        ace_owned = any(c in view.in_logic for c in achievements.chapters_with_id(
-            ace, chapter_pool_for_slot(view.slot), view.assignments
-        ))
+        ace_owned = any(
+            c in view.in_logic
+            for c in achievements.chapters_with_id(ace, chapter_pool_for_slot(view.slot), view.assignments)
+        )
     return bool(achievements.rival_chapters(spec.commander, view.in_logic)) and ace_owned
 
 
@@ -177,16 +183,26 @@ def _tribe_force_in_logic(view: _LogicView, spec: TribeSpec) -> bool:
         return False
     if view.gacha_on:
         witnesses = achievements.tribe_force_witnesses(
-            spec.tribe, view.starting_borg, view.box_borgs,
-            tuple(slot_value(view.slot, slot_keys.ACHIEVEMENT_BORGS)), view.min_cost
+            spec.tribe,
+            view.starting_borg,
+            view.box_borgs,
+            tuple(slot_value(view.slot, slot_keys.ACHIEVEMENT_BORGS)),
+            view.min_cost,
         )
         return all(view.borg_complete(b) for b in witnesses)
     witness_chapters = achievements.tribe_force_witness_chapters(
-        spec.tribe, chapter_pool_for_slot(view.slot), view.assignments,
-        view.starting_borg, view.box_borgs, view.min_cost
+        spec.tribe,
+        chapter_pool_for_slot(view.slot),
+        view.assignments,
+        view.starting_borg,
+        view.box_borgs,
+        view.min_cost,
     )
-    covered = (bool(witness_chapters) or TRIBES.get(view.starting_borg) == spec.tribe
-               or any(TRIBES.get(b) == spec.tribe for b in view.box_borgs))
+    covered = (
+        bool(witness_chapters)
+        or TRIBES.get(view.starting_borg) == spec.tribe
+        or any(TRIBES.get(b) == spec.tribe for b in view.box_borgs)
+    )
     return covered and all(c in view.in_logic for c in witness_chapters)
 
 
