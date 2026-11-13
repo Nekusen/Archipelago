@@ -1,0 +1,4 @@
+# Files that must not be packaged into gotcha_force.apworld (gitignore syntax).
+src/
+ruff.toml
+.ruff_cache/

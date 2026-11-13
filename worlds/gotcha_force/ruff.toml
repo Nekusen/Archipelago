@@ -1,0 +1,16 @@
+# Archipelago's own ruff.toml (at the root of the fork, two folders up), plus what this world adds.
+extend = "../../ruff.toml"
+extend-exclude = ["build"]
+
+[lint]
+extend-select = ["ANN"]  # Archipelago's style guide asks for type annotations; this enforces it
+ignore = ["ANN401"]  # Any is sometimes the honest type (slot data values)
+
+[lint.isort]
+# Archipelago's core modules, kept in their own import block apart from this world's relative imports
+known-third-party = [
+    "BaseClasses", "CommonClient", "Fill", "NetUtils", "Options", "Utils", "kvui", "rule_builder", "test", "worlds",
+]
+
+[lint.per-file-ignores]
+"src/*.py" = ["T201"]  # command-line scripts: printing is their job
