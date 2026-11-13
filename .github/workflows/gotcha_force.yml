@@ -1,0 +1,43 @@
+name: Gotcha Force
+
+on:
+  push:
+    paths:
+      - "worlds/gotcha_force/**"
+      - ".github/workflows/gotcha_force.yml"
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Eijebong/ap-actions/ap-tests@main
+        with:
+          apworld-path: worlds/gotcha_force
+          ap-version: "0.6.8"  # ap-tests needs 0.6.8 or newer to run only this world's tests
+          python-version: "3.12"
+
+  fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Eijebong/ap-actions/fuzz@main
+        with:
+          apworld-path: worlds/gotcha_force
+          ap-version: "0.6.8"
+          python-version: "3.12"
+          runs: 200
+
+  dol-patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the assembler
+        run: pip install -r worlds/gotcha_force/src/requirements.txt
+
+      - name: Build the patch and compare it with data/dol_patch.py
+        run: python worlds/gotcha_force/src/build_patch.py

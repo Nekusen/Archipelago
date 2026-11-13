@@ -1,0 +1,31 @@
+name: Gotcha Force release
+
+on:
+  push:
+    tags:
+      - "gotcha_force-v*"  # never "**": tags synced from Archipelago would trigger a release
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that the tag matches archipelago.json
+        run: |
+          version=$(python3 -c "import json; print(json.load(open('worlds/gotcha_force/archipelago.json'))['world_version'])")
+          if [ "gotcha_force-v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::archipelago.json says $version but the tag is $GITHUB_REF_NAME"
+            exit 1
+          fi
+
+  release:
+    needs: check-version
+    permissions:
+      contents: write
+    uses: Eijebong/ap-actions/.github/workflows/release-apworld.yml@main
+    with:
+      apworld-path: worlds/gotcha_force
+      ap-version: "0.6.8"
+      python-version: "3.12"
+      prerelease: false
