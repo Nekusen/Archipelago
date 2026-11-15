@@ -46,7 +46,8 @@ def inventory_groups(
     if zones is not None:
         groups.append(zones)
     groups.append(commander_group(ap_state, slot))
-    groups.append(borg_group(ap_state, slot))
+    if logic.slot_value(slot, slot_keys.GACHA_LOCATIONS):
+        groups.append(borg_group(ap_state, slot))
     return groups
 
 
