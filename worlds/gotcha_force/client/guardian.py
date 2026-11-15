@@ -97,7 +97,7 @@ class Guardian(CollectionStage, CheckStage):
             return
         self._patch_status = status.status
         if status.status == iso_patch.PATCH_CURRENT:
-            logger.info("Patched ISO detected: the on-map mission status display is active.")
+            logger.info("Patched ISO detected and its the correct patch version.")
         elif status.status == iso_patch.PATCH_NONE:
             logger.warning(
                 "This ISO does not have the Archipelago patch: the on-map "

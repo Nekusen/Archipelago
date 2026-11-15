@@ -20,7 +20,6 @@ from .logic.achievements import (
     TYPE_COMMANDER_STYLE,
     TYPE_COMMANDER_STYLE_ALL,
     TYPE_PARTNER_STYLE,
-    TYPE_THEME,
     TYPE_TRIBE_FORCE,
 )
 from .logic.enemies import (
@@ -60,18 +59,12 @@ class Goal(Choice):
     mission that comes later than it in the story is left out of the
     game entirely.
 
-    - cosmic_dragon: the Cosmic Dragon at the Sky Fortress.
-    - galactic_emperor: the final battle. Almost the whole story is in
-      play.
-    - dark_knight: the Dark Knight showdown (a shorter game).
-    - custom: pick any mission yourself with Goal Mission.
-    - random_mission: a mission picked by the seed, at least as deep
-      into the story as the Dark Knight (revealed by the client and
-      the spoiler).
-
-    A few story battles exist in two exclusive versions (you only ever
-    see one in a normal playthrough); each seed picks one version and
-    only that one exists — including for the goal itself.
+    - cosmic_dragon: the Cosmic Dragon.
+    - galactic_emperor: the final battle.
+    - dark_knight: the Dark Knight showdown.
+    - (EXPERIMENTAL) custom: pick any mission yourself with Goal Mission.
+    - (EXPERIMENTAL) random_mission: a mission picked by the seed, at least as deep
+      into the story as the Dark Knight.
     """
 
     display_name = "Goal"
@@ -85,11 +78,8 @@ class Goal(Choice):
 
 class GoalMission(Range):
     """Only with goal: custom — the internal chapter id of the mission
-    whose victory is your goal (the ids are listed in the client's
-    Tracker tab and in the spoiler as "NNN - Title"). Ignored with any
-    other goal. A very early mission leaves few missions in the seed
-    and generation may fail: raise Mission Checks or keep Gacha
-    Locations on to make room."""
+    whose victory is your goal (check the mission ids doc). Ignored with any
+    other goal."""
 
     display_name = "Goal Mission"
     range_start = 0
@@ -101,13 +91,10 @@ class MissionPool(Choice):
     """Which missions are in your seed (besides the goal).
 
     - all: every story mission.
-    - main: only the main-story experience — the missions a normal
-      playthrough goes through, without the optional side missions
-      that stretch the game (about 60, following the story's main
-      path).
-    - random_custom: a set of missions picked by the seed. Choose how
+    - main: an arbitrary set of missions that follow the required missions (about 60 more or less).
+    - (EXPERIMENTAL) random_custom: a set of missions picked by the seed. Choose how
       many with Custom Mission Count, and pin missions you want in
-      with Custom Missions; the rest are drawn at random.
+      with Custom Missions (check the mission ids doc).
 
     Missions that come later than the goal are always left out.
     """
@@ -122,10 +109,8 @@ class MissionPool(Choice):
 class CustomMissionCount(Range):
     """Only with mission_pool: random_custom — how many missions are
     in your seed. The first mission is always included on top of this
-    number, and the goal mission is never part of it. If you ask for
-    more missions than exist before your goal, you simply get all of
-    them. Very low counts can fail to generate: raise Mission Checks
-    or keep Gacha Locations on to make room."""
+    number, and the goal mission is never part of it. Very low counts
+    can fail to generate depending on your settings"""
 
     display_name = "Custom Mission Count"
     range_start = 10
@@ -136,23 +121,15 @@ class CustomMissionCount(Range):
 class CustomMissions(OptionSet):
     """Only with mission_pool: random_custom — mission ids that are
     guaranteed to be in your seed, for example ["18", "45", "120"]
-    (the ids are listed in the client's Tracker tab and in the spoiler
-    as "NNN - Title"). If the list is shorter than Custom Mission
-    Count, the rest are drawn at random; if it is longer, everything
-    you listed is still included. Missions that cannot be in the seed
-    (the goal, missions later than the goal in the story) are quietly
-    skipped. For story battles that exist in two exclusive versions,
-    listing one pins that version for the whole seed — never list
-    both."""
+    (check the mission ids doc for the full list). If the list is shorter
+    than Custom Mission Count, the rest are drawn at random. If it is longer, everything
+    you listed is still included."""
 
     display_name = "Custom Missions"
 
 
 class DeathCrystalsInPool(Range):
-    """How many Death Crystal items are placed in the item pool. The
-    crystals above Death Crystals Required are spares: when a small
-    seed has no room for all of them, the spares are dropped (never
-    the required ones) and the generator says so."""
+    """How many Death Crystal items are placed in the item pool."""
 
     display_name = "Death Crystals in Pool"
     range_start = 1
@@ -173,8 +150,7 @@ class DeathCrystalsRequired(Range):
 class StoryKeys(Range):
     """How many Progressive Story Keys are in the item pool. Your
     missions are sorted by story order and split into that many
-    batches plus one: the first batch is open from the start, and each
-    key opens the next batch. With 0, every mission is open from the
+    batches. With 0, every mission is open from the
     beginning."""
 
     display_name = "Story Keys"
@@ -188,13 +164,12 @@ class GachaLocations(DefaultOnToggle):
 
     - On: whenever the gacha pops after a battle, it sends a check
       instead of giving you the borg. Each borg you can meet as an
-      enemy has its own checks (how many, see Gacha Checks), and every
-      gacha only pops once. Borgs are added to the item pool so they
+      enemy has its own checks, and every gacha only pops once.
+      Borgs are added to the item pool so they
       reach you through the multiworld. The total number depends on
       which enemies appear in your seed. A small set of borgs is
       marked progression and guaranteed to show up early-ish, so you
-      always have something to fight with; logic itself only gates
-      missions by GF Energy.
+      always have something to fight with.
     - Off: the gacha works like in the original game and hands out
       borgs directly. Borgs are not part of the item pool.
     """
@@ -204,26 +179,23 @@ class GachaLocations(DefaultOnToggle):
 
 class GachaPartnerKills(DefaultOnToggle):
     """In the original game, an enemy only fills the gacha meter when
-    YOU land the final blow — kills by your partner don't count, so
+    YOU land the final blow. Kills by your partner don't count, so
     borgs you clearly fought sometimes never show up in the gacha.
 
-    - On (recommended): every defeated enemy on your side's scoreboard
-      fills the gacha meter, no matter who landed the final blow.
+    - On (recommended): every defeated enemy by you or your ally counts.
+    enemies killed by ICBM Tank explosions or similar will still not count.
     - Off: original behavior, only your own kills count.
-
-    Battle-results statistics are not affected either way.
     """
 
     display_name = "Gacha Counts Partner Kills"
 
 
 class GachaRate(Range):
-    """How fast the gacha fills up. Higher values make it pop much more
-    often; at high settings, beating a new enemy type usually pops its
+    """How fast the gacha triggers. Higher values make it pop much more
+    often. At high settings, beating a new enemy type usually pops its
     gacha in that same battle. 1 is the original game's speed (very
-    slow, not recommended). Also works as a quality-of-life boost when
-    Gacha Locations is off — in that case borgs you already own go back
-    to the normal rate so you are not flooded with copies."""
+    slow, not recommended). If playing with "gacha locations - off" borgs
+    you already own go back to the normal rate so you are not flooded with copies."""
 
     display_name = "Gacha Rate"
     range_start = 1
@@ -235,16 +207,12 @@ class GachaChecks(Choice):
     """How many checks the gacha gives for each borg (only matters when
     Gacha Locations is on).
 
-    - per_fragment: one check for every piece a borg is made of, like
-      the original game hands them out, so a borg of three pieces has
-      to be beaten three times.
+    - per_fragment: one check for data crystal a borg is made of, like
+      the original game hands them out.
     - one_per_borg: a single check for each borg, no matter how many
-      pieces it has. Every borg only has to be beaten once, and there
-      are fewer gacha checks in total.
+      pieces it had.
 
-    This setting is independent of Borg Items: if you want complete
-    borgs AND one check each, set Borg Items to whole and this to
-    one_per_borg.
+    This setting is independent of "Borg Items".
     """
 
     display_name = "Gacha Checks"
@@ -254,21 +222,19 @@ class GachaChecks(Choice):
 
 
 class Achievements(Toggle):
-    """Adds achievement checks: extra objectives such as winning with a
+    """(EXPERIMENTAL)
+    Adds achievement checks: extra objectives such as winning with a
     borg matching your partner's style, beating a commander while
     carrying a borg of their style, fielding a whole force of one
-    tribe, or bringing a themed borg to a themed mission. Pick which
-    kinds with Achievement Types. Every achievement is based on the
-    original game's styles and themes, and the client's Tracker tab
-    lists each objective."""
+    tribe, and more.
+    Pick which kinds with Achievement Types."""
 
     display_name = "Achievement Locations"
 
 
 class AchievementTypes(OptionSet):
     """Which achievement types are in play (only with Achievement
-    Locations on). Types listed here are added as checks; the rest are
-    left out.
+    Locations on).
 
     - partner_style: win any mission that puts a partner at your side
       while carrying a borg of that partner's style (one check per
@@ -280,18 +246,15 @@ class AchievementTypes(OptionSet):
       with commander_style.
     - tribe_force: win any mission with a force made of a single
       tribe, worth at least Tribe Force Minimum Cost (one check per
-      tribe with enough borgs).
+      tribe).
     - theme_missions: win a themed mission (dragons, bugs, heroes...)
       while carrying a borg of its theme.
     - ally_finisher: win a mission where your PARTNER lands the blow
-      that ends the battle. A seeded 10% sample of the missions where
-      you choose your partner gets a check each.
-    - no_casualties: win a few handpicked missions without losing a
-      single borg. These checks only appear when those missions keep
-      their original enemies.
+      that ends the battle. 10% of your missions in your seed will get this
+      as an extra achievement.
     - ace_duel: defeat each commander while carrying their own
-      signature borg (Sasuke against Kakeru, Kei against Usagi...) —
-      the original game's ace, even if this seed shuffles aces around.
+      signature borg (Sasuke against Kakeru, Kei against Usagi...).
+      Its the original game's ace, even if this seed shuffles aces around.
     """
 
     display_name = "Achievement Types"
@@ -300,8 +263,7 @@ class AchievementTypes(OptionSet):
         {
             TYPE_PARTNER_STYLE,
             TYPE_COMMANDER_STYLE,
-            TYPE_TRIBE_FORCE,
-            TYPE_THEME,
+            TYPE_TRIBE_FORCE
         }
     )
 
@@ -320,9 +282,7 @@ class TribeForceMinCost(Range):
 class TribeForceTribes(OptionSet):
     """Which tribes get a tribe_force achievement. Only matters when
     tribe_force is among the Achievement Types: the tribes listed here
-    get a check each, the rest get none. A tribe that cannot reach
-    Tribe Force Minimum Cost in your seed is skipped anyway. Names are
-    the original game's tribes, in any capitalization."""
+    get a check each, the rest get none."""
 
     display_name = "Tribe Force Tribes"
     valid_keys = frozenset(t.casefold() for t in TRIBE_ORDER)
@@ -344,7 +304,7 @@ class BorgItems(Choice):
     Locations is on).
 
     - fragments: borgs arrive in pieces, like in the original game.
-      Collect all the pieces of a borg to complete it.
+      Collect all the pieces of a borg to get access to it.
     - whole: every borg item is a complete, ready-to-use borg.
     """
 
@@ -355,23 +315,15 @@ class BorgItems(Choice):
 
 
 class CommanderItems(Choice):
-    """How the GF Commanders (your recruitable friends) appear in the
-    item pool.
+    """How the GF Commanders appear in the item pool.
 
-    Missions that put a partner at Kou's side need that partner: a
-    mission with a fixed partner needs that commander, and a mission
-    where you pick your partner needs at least one recruited commander
-    who is not the rival of that mission. Missions Kou plays alone
-    need nobody. A mission stays hidden on the map until you have a
-    partner it accepts.
-
-    In both modes one item recruits each commander.
+    In both modes one item recruits each commander. This just defines
+    how they upgrade.
 
     - global_upgrades: shared upgrade items raise the level of every
-      commander at once, like in the original game.
+      commander at once.
     - individual: each commander has their own upgrade items, which
-      raise only their level. Upgrades found before the commander wait
-      and apply the moment the commander joins.
+      raise only their level.
     """
 
     display_name = "Commander Items"
@@ -382,9 +334,7 @@ class CommanderItems(Choice):
 
 class AreaAccessItems(DefaultOnToggle):
     """Adds one Area Access item per map zone. Missions in a zone only
-    show up once you have received its access item. The whole map is
-    always visible, and you start with access to the zone (or zones)
-    around your home."""
+    show up once you have received its access item."""
 
     display_name = "Area Access Items"
 
@@ -395,8 +345,7 @@ class GotchaBox(Choice):
 
     - randomized: the Gotcha Box is an item in the multiworld. Until it
       arrives you fight with your starting borg alone.
-    - unlocked: you have the Gotcha Box from the start, with its two
-      borgs.
+    - unlocked: you have the Gotcha Box from the start
     """
 
     display_name = "Gotcha Box"
@@ -408,14 +357,14 @@ class GotchaBox(Choice):
 class GFLogicDifficulty(Choice):
     """How strong your GF Energy is expected to be before the game
     logic counts a mission as beatable. You can always try harder
-    missions early at your own risk — this only affects where required
-    items can be placed.
+    missions early at your own risk, but you're never expected to do so.
 
     - normal: comfortable fights, close to a regular playthrough.
     - hard: expects you to win against noticeably stronger enemy teams.
     - very_hard: expects wins against the toughest odds the original
       game ever asks for.
-    - no_cap: GF Energy is ignored by the logic entirely.
+    - (EXPERIMENTAL) no_cap: GF Energy is ignored by the logic entirely.
+    This could make almost impossible seeds with "Chaos" as yoor randomization option.
     """
 
     display_name = "GF Energy Logic Difficulty"
@@ -429,13 +378,8 @@ class GFLogicDifficulty(Choice):
 class StartingBorg(Choice):
     """Which borg you start the game with.
 
-    - vanilla: G Red, like in the original game.
-    - random_borg: a random borg, G Red and Neo G Red included. Very
-      weak ones are never picked, so you always have missions you can
-      reasonably beat from the start.
-
-    Starting with G Red or Neo G Red hands you the matching Progressive
-    G Red items right away, and they leave the pool.
+    - vanilla: G Red.
+    - random_borg: a random borg.
     """
 
     display_name = "Starting Borg"
@@ -451,10 +395,10 @@ class EnemyRandomization(Choice):
     - vanilla: the original enemy line-ups.
     - balanced: every enemy is swapped for one of similar strength, so
       the difficulty curve stays close to the original game.
-    - chaos: any enemy can appear anywhere. Wild swings in difficulty.
+    - chaos: any enemy can appear anywhere.
 
-    Story bosses and the final battles always keep their identity. The
-    Galactic Emperor only ever appears in its own final battle.
+    The Galactic Emperor only ever appears in its own final battle.
+    The first mission and your GOAL mission are not randomized.
     """
 
     display_name = "Enemy Randomization"
@@ -474,7 +418,8 @@ class CommanderAceBorgs(Choice):
     - shuffle: the signature borgs are swapped around between the
       commanders.
     - full_random: each commander gets a random borg as their
-      signature.
+      signature. It will keep that borg as their new "signature borg"
+      for all their fights.
     """
 
     display_name = "Commander Ace Borgs"
@@ -485,24 +430,17 @@ class CommanderAceBorgs(Choice):
 
 
 class BossBorgs(Choice):
-    """What happens to the big boss enemies of the story: the Flame,
-    Blizzard, Plasma and Cosmic Dragons, the Cyber Death Dragon, the
-    Ultimate Cannon, the ICBM Tank, the Death Saucer, the Dark Knight's
-    trio and the four pairs of Machine Borgs that merge in battle. Only
-    used when Enemy Randomization is balanced or chaos.
+    """What happens to the big boss enemies of the story (what is considered a boss
+    is arbitrary, but expect the big dragons, the Ultimate Cannon, etc).
+    Only used when Enemy Randomization is balanced or chaos.
 
     - vanilla: every boss keeps its identity.
     - random_boss: every boss slot gets one of those bosses drawn at
       random, so a seed can have several of one and none of another.
     - full_random: each boss slot gets a completely random enemy.
 
-    Some bosses travel as a group: the Dark Knight always brings his
-    Sapphire Knight and Ruby Knight, and each Machine pair comes
-    together. Wherever they land, the whole group spawns together; a
-    Machine pair can merge in battle only when it gets the field to
-    itself, like in the story.
-
-    The final battles of both goals are never changed.
+    Some bosses travel as a group. For example, the Dark Knight always brings his
+    Sapphire Knight and Ruby Knight.
     """
 
     display_name = "Boss Borgs"
@@ -519,7 +457,7 @@ class PartnerBorgs(Choice):
     - balanced: partner teams are rebuilt with different borgs of
       similar overall strength.
     - full_random: partner teams are fully random. A higher partner
-      level can end up with a weaker team — that is part of the fun.
+      level can end up with a weaker team.
     """
 
     display_name = "Partner Borgs"
@@ -530,8 +468,7 @@ class PartnerBorgs(Choice):
 
 
 class PartnerAceBorgs(Choice):
-    """What happens to your partners' signature borgs (the special borg
-    each friend always brings).
+    """What happens to your partners signature borgs.
 
     - vanilla: every partner keeps their own signature borg.
     - shuffle: the signature borgs are swapped around between partners.
@@ -546,13 +483,13 @@ class PartnerAceBorgs(Choice):
 
 
 class EnemyAI(Choice):
-    """How sharp the enemy borgs' reflexes are. Higher AI values make
+    """(EXPERIMENTAL)
+    How sharp the enemy AI is. Higher AI values make
     enemies attack, dodge and switch targets more often, without
     changing which enemies appear.
 
     - vanilla: the original game's AI.
-    - progressive: random, but later missions tend to get sharper
-      enemies.
+    - progressive: random, but later missions tend to get better AI.
     - random_ai: fully random between the minimum and maximum below.
     """
 
@@ -564,7 +501,7 @@ class EnemyAI(Choice):
 
 
 class EnemyAIMinimum(Range):
-    """Lowest possible enemy AI (0 = barely reacts). Only used with
+    """Lowest possible enemy AI. Only used with
     progressive or random AI. If minimum and maximum are equal, every
     enemy uses exactly that value."""
 
@@ -576,7 +513,7 @@ class EnemyAIMinimum(Range):
 
 class EnemyAIMaximum(Range):
     """Highest possible enemy AI. 12 is the strongest the original game
-    uses; 13 to 15 go beyond it, up to superhuman reflexes."""
+    uses."""
 
     display_name = "Enemy AI Maximum"
     range_start = 0
@@ -585,9 +522,9 @@ class EnemyAIMaximum(Range):
 
 
 class EnemyLevels(Choice):
-    """Randomizes the level of enemy borgs. Higher-level enemies hit
-    harder and take more hits. The rewards you get are the same either
-    way: the level of an enemy does not change what it drops.
+    """(EXPERIMENTAL)
+    Randomizes the level of enemy borgs. The rewards you get for beating them
+    are the same either way.
 
     - vanilla: the original levels.
     - progressive: random, but later missions tend to have higher
@@ -615,7 +552,7 @@ class EnemyLevelMinimum(Range):
 
 class EnemyLevelMaximum(Range):
     """Highest possible enemy level. 8 is the highest the original
-    game uses; 9 and 10 go beyond it."""
+    game uses."""
 
     display_name = "Enemy Level Maximum"
     range_start = 0

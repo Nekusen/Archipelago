@@ -90,6 +90,6 @@ components.append(
         PATCHER_TITLE,
         func=_patch_iso,
         component_type=Type.TOOL,
-        description="Create the patched copy of your Gotcha Force USA ISO (adds the on-map mission status display).",
+        description="Create the patched copy of your Gotcha Force ISO.",
     )
 )

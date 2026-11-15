@@ -303,7 +303,7 @@ async def _hook_dolphin(ctx: GotchaForceContext, hook_warned: bool) -> bool:
         return True
     ctx.game_valid = False
     if not hook_warned:
-        logger.info("Waiting for Dolphin (with Gotcha Force USA running)...")
+        logger.info("Waiting for Dolphin (with Gotcha Force running)...")
     if ctx.dolphin.connect():
         return True
     await asyncio.sleep(HOOK_RETRY)
@@ -314,12 +314,12 @@ async def _find_game(ctx: GotchaForceContext, guardian: Guardian, hook_warned: b
     game_id = ctx.dolphin.read(addresses.GAME_ID_ADDR, len(addresses.GAME_ID))
     if game_id != addresses.GAME_ID:
         if ctx.game_valid or not hook_warned:
-            logger.info(f"The loaded game is not GG4E08 ({game_id!r}); waiting.")
+            logger.info(f"The loaded game is not GG4E08 ({game_id!r}). Waiting...")
         ctx.game_valid = False
         await asyncio.sleep(HOOK_RETRY)
         return False
     if not ctx.game_valid:
-        logger.info("Gotcha Force (GG4E08) detected.")
+        logger.info("Gotcha Force detected.")
         guardian.on_game_detected()
         ctx.game_valid = True
     return True
