@@ -41,7 +41,7 @@ It should guide you into the process of how to make a YAML for this game, genera
       and choose the "Memory Card Manager" option. It should open a window where you can manage all your saves.
 4. Once the **Gotcha Force Client** if you haven't done so already.
 5. The client will show a message like "Gotcha Force detected" when connection with Dolphin is stablished and the game is open
-6. Write the host and port (usually something like "archipelago.gg:<port>") and hit connect
+6. Write the host and port (usually something like "archipelago.gg:\<port\>") and hit connect
 7. Write the slot name when asked for it and press enter
 
 
