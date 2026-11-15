@@ -356,6 +356,8 @@ class GotchaForceWorld(World):
             covered += by_tile[tile]
             if covered >= target:
                 break
+        if STARTING_TILE not in cover:
+            cover.add(STARTING_TILE)
         return cover
 
     def _push_starting_kit(self) -> None:
