@@ -7,7 +7,7 @@ from typing import NamedTuple
 
 from ..data.addresses import NO_ID, QREC_FLAGS, QREC_ID
 from ..data.borgs import BORGS, COSTS, RANDOMIZABLE
-from ..data.chapters import CHAPTERS, GOAL_CHAPTERS, TUTORIAL_CHAPTER
+from ..data.chapters import CHAPTERS, GALACTIC_EMPEROR_CHAPTERS, TUTORIAL_CHAPTER
 from ..data.packs import (
     DARK_KNIGHT,
     DARK_KNIGHT_ESCORTS,
@@ -94,7 +94,7 @@ NO_BURST_BIT = 0x40
 
 FLAGS_OFF = QREC_FLAGS - QREC_ID
 
-PROTECTED_CHAPTERS = frozenset(GOAL_CHAPTERS) | frozenset({TUTORIAL_CHAPTER})
+PROTECTED_CHAPTERS = frozenset(GALACTIC_EMPEROR_CHAPTERS) | frozenset({TUTORIAL_CHAPTER})
 
 
 class _StatTarget(NamedTuple):

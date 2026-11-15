@@ -398,7 +398,7 @@ class EnemyRandomization(Choice):
     - chaos: any enemy can appear anywhere.
 
     The Galactic Emperor only ever appears in its own final battle.
-    The first mission and your GOAL mission are not randomized.
+    The first mission and the galactic emperor mission are not randomized.
     """
 
     display_name = "Enemy Randomization"
