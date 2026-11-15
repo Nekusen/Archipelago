@@ -259,13 +259,7 @@ class AchievementTypes(OptionSet):
 
     display_name = "Achievement Types"
     valid_keys = ALL_TYPES
-    default = frozenset(
-        {
-            TYPE_PARTNER_STYLE,
-            TYPE_COMMANDER_STYLE,
-            TYPE_TRIBE_FORCE
-        }
-    )
+    default = frozenset({TYPE_PARTNER_STYLE, TYPE_COMMANDER_STYLE, TYPE_TRIBE_FORCE})
 
 
 class TribeForceMinCost(Range):
@@ -657,10 +651,10 @@ DIFFICULTY_RATIOS = {
 }
 
 STARTING_BORG_MIN_COST = {
-    GFLogicDifficulty.option_normal: 140,
-    GFLogicDifficulty.option_hard: 90,
-    GFLogicDifficulty.option_very_hard: 60,
-    GFLogicDifficulty.option_no_cap: 60,
+    GFLogicDifficulty.option_normal: 150,
+    GFLogicDifficulty.option_hard: 100,
+    GFLogicDifficulty.option_very_hard: 80,
+    GFLogicDifficulty.option_no_cap: 80,
 }
 
 

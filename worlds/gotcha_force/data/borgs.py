@@ -220,6 +220,11 @@ G_RED_COST = 300
 NEO_G_RED_COST = 500
 G_BLACK = 0x062a
 
+# These borgs suicide, so they can't be starting borgs
+WALKING_BOMB = 0x0809
+DEATH_ICBM = 0x0d06
+
+
 # the Death Borgs: their gacha thresholds are about ten times everyone else's
 DEATH_BORGS: frozenset[int] = frozenset({
     0x0008,
@@ -283,3 +288,6 @@ NAMES: dict[int, str] = {i: b.name for i, b in (BORGS | ENEMY_ONLY).items()}
 # Borgs a randomization may pick. Outside its own arena the Emperor hangs
 # out of reach and cannot be damaged, so its mission could never be won.
 RANDOMIZABLE: tuple[int, ...] = tuple(sorted((set(BORGS) | set(ENEMY_ONLY)) - {GALACTIC_EMPEROR}))
+
+# Starting borg list, removes suicide borgs
+STARTING_BORG_CANDIDATES: tuple[int, ...] = tuple(sorted(set(RANDOMIZABLE) - {WALKING_BOMB, DEATH_ICBM}))

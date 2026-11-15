@@ -11,7 +11,7 @@ from typing_extensions import override
 from worlds.AutoWorld import WebWorld, World
 
 from . import items, locations, regions, rules, slot_keys
-from .data.borgs import BORGS, COSTS, G_RED, G_RED_COST, NEVER_IN_POOL, RANDOMIZABLE
+from .data.borgs import BORGS, COSTS, G_RED, G_RED_COST, NEVER_IN_POOL, STARTING_BORG_CANDIDATES
 from .data.chapters import CHAPTERS
 from .data.zones import STARTING_TILE
 from .game import GAME_NAME
@@ -254,12 +254,12 @@ class GotchaForceWorld(World):
 
     def _starting_borg_candidates(self, opts: GotchaForceOptions, first_batch: list[int]) -> list[int]:
         floor = STARTING_BORG_MIN_COST[opts.gf_logic_difficulty.value]
-        candidates = [b for b in RANDOMIZABLE if COSTS[b] >= floor]
+        candidates = [b for b in STARTING_BORG_CANDIDATES if COSTS[b] >= floor]
         if self.gf_ratio != UNLIMITED_RATIO:
             cost_to_open = self._cost_to_open_min_chapters(first_batch)
             candidates = [b for b in candidates if COSTS[b] * self.gf_ratio >= cost_to_open]
         if not candidates:
-            return [max(RANDOMIZABLE, key=lambda b: COSTS[b])]
+            return [max(STARTING_BORG_CANDIDATES, key=lambda b: COSTS[b])]
         return sorted(candidates)
 
     def _cost_to_open_min_chapters(self, chapters: list[int]) -> int:

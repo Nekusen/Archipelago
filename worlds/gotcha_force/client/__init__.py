@@ -315,6 +315,7 @@ async def _find_game(ctx: GotchaForceContext, guardian: Guardian, hook_warned: b
         ctx.game_valid = True
     return True
 
+
 async def _send_checks(
     ctx: GotchaForceContext, guardian: Guardian, victories: dict[int, int], slot: client_logic.SlotData
 ) -> None:
