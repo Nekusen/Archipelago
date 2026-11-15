@@ -8,7 +8,7 @@
 
 ## Patching your ISO (Only required once)
 
-In order to play, no need to use a **patched copy** of the game. 
+In order to play, you need to use a **patched copy** of the game. 
 
 The patch is **the same for every seed**. This means you only need to patch
 one time (when the apworld updates, sometimes you may need to patch again.
