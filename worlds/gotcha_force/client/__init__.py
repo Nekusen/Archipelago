@@ -188,7 +188,7 @@ class GotchaForceContext(CommonContext):
                 client_logic.slot_value(slot, slot_keys.PARTNER_ACE_BORGS),
             )
         )
-        self._log_connection(slot, plan)
+        self._log_connection(slot)
 
     @staticmethod
     def _enemy_byte_writes(slot: dict[str, Any], plan: EnemyPlan) -> dict[int, int]:
@@ -224,17 +224,9 @@ class GotchaForceContext(CommonContext):
         self.achievement_specs = plan.specs
         self.ach_by_chapter = client_achievements.achievements_by_chapter_map(plan.specs)
 
-    def _log_connection(self, slot: dict[str, Any], plan: EnemyPlan) -> None:
+    def _log_connection(self, slot: dict[str, Any]) -> None:
         starting = client_logic.slot_value(slot, slot_keys.STARTING_BORG)
-        logger.info(
-            f"Connected. Starting borg: {client_logic.borg_name(starting)} | spawns to "
-            f"rewrite: {len(self.enemy_writes)} | "
-            f"AI/level/flag bytes: {len(self.enemy_byte_writes)} | "
-            f"packs: {len(plan.packs)} (custom queues: "
-            f"{sorted(self.queue_edits)}) | pairs: "
-            f"{sorted(plan.pairs)} | gacha locations: "
-            f"{sum(len(v) for v in self.gacha_map.values())}"
-        )
+        logger.info(f"Connected. Starting borg: {client_logic.borg_name(starting)}")
 
 
 async def game_watcher(ctx: GotchaForceContext) -> None:
