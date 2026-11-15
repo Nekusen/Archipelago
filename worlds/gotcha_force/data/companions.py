@@ -1,5 +1,3 @@
-"""Generated from the game's data tables. Do not edit by hand."""
-
 # index -> name of the 13 companions, matched to their index
 # through the in-game mission titles; renaming one only changes
 # the label, not the mechanics.

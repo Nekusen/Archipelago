@@ -1,5 +1,3 @@
-"""Generated from the game's data tables. Do not edit by hand."""
-
 from typing import NamedTuple
 
 
@@ -37,8 +35,6 @@ REWARDS: tuple[Reward, ...] = (
     Reward("crystal_3", "Reward: Death Crystal 3", (117,)),
     Reward("map_expanded", "Reward: Expanded Map", (1,)),
     Reward("map_full", "Reward: Full Map", (2,)),
-    Reward("scenario_11", "Reward: Death Base Arena", (24, 134)),
-    Reward("scenario_13", "Reward: Special Arena", (34,)),
     Reward("gotcha_box", "Reward: Gotcha Box", (9,)),
     Reward("neo_g_red", "Reward: Neo G Red", (24,)),
     Reward("death_gate", "Reward: Death Gate", (158,)),

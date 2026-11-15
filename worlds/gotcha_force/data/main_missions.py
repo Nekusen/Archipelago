@@ -1,5 +1,3 @@
-"""Generated from the game's data tables. Do not edit by hand."""
-
 # Mission pool `main`: the curated subset of story chapters that
 # make up the core experience (cross-checked against titles and
 # spawns). The tutorial (chapter 1) is always included.

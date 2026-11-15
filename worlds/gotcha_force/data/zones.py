@@ -1,5 +1,3 @@
-"""Generated from the game's data tables. Do not edit by hand."""
-
 # tile -> zone name (12 playable zones)
 ZONES: dict[int, str] = {
     0: "Kou's Home",

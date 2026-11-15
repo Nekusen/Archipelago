@@ -1,5 +1,3 @@
-"""Generated from the game's data tables. Do not edit by hand."""
-
 # chapter -> in-game title as shown on screen (all 165 chapters).
 # Titles repeat across chapters: for the player, always pair
 # them with the zone or the chapter id.

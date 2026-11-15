@@ -1,5 +1,3 @@
-"""Generated from the game's data tables. Do not edit by hand."""
-
 # Achievement data. Everything is defined from vanilla.
 
 # id -> tribe as shown on screen (the collection's 20 tribes;
