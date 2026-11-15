@@ -17,8 +17,6 @@ from .options import GotchaForceOptions
 if TYPE_CHECKING:
     from .world import GotchaForceWorld
 
-ITEM_ID_BASE: Final = 690_000_000
-
 STORY_KEY_ID: Final = 1
 GF_CAP_ID: Final = 2
 GOTCHA_BOX_ID: Final = 3
@@ -58,13 +56,13 @@ class GotchaForceItem(Item):
 
 def _build_tables() -> tuple[dict[str, int], dict[str, ItemClassification]]:
     ids: dict[str, int] = {
-        PROG_STORY_KEY: ITEM_ID_BASE + STORY_KEY_ID,
-        PROG_GF_CAP: ITEM_ID_BASE + GF_CAP_ID,
-        GOTCHA_BOX: ITEM_ID_BASE + GOTCHA_BOX_ID,
-        PROG_G_RED: ITEM_ID_BASE + G_RED_ID,
-        DEATH_CRYSTAL: ITEM_ID_BASE + DEATH_CRYSTAL_ID,
-        PROG_CMD_UPGRADE: ITEM_ID_BASE + CMD_UPGRADE_ID,
-        FILLER_XP: ITEM_ID_BASE + FILLER_XP_ID,
+        PROG_STORY_KEY: STORY_KEY_ID,
+        PROG_GF_CAP: GF_CAP_ID,
+        GOTCHA_BOX: GOTCHA_BOX_ID,
+        PROG_G_RED: G_RED_ID,
+        DEATH_CRYSTAL: DEATH_CRYSTAL_ID,
+        PROG_CMD_UPGRADE: CMD_UPGRADE_ID,
+        FILLER_XP: FILLER_XP_ID,
     }
     cls: dict[str, ItemClassification] = {
         PROG_STORY_KEY: ItemClassification.progression,
@@ -76,17 +74,17 @@ def _build_tables() -> tuple[dict[str, int], dict[str, ItemClassification]]:
         FILLER_XP: ItemClassification.filler,
     }
     for tile in ZONES:
-        ids[area_access_item_name(tile)] = ITEM_ID_BASE + AREA_ACCESS_ID_OFFSET + tile
+        ids[area_access_item_name(tile)] = AREA_ACCESS_ID_OFFSET + tile
         cls[area_access_item_name(tile)] = ItemClassification.progression
     for idx in COMPANIONS:
-        ids[commander_item_name(idx)] = ITEM_ID_BASE + COMMANDER_ID_OFFSET + idx
+        ids[commander_item_name(idx)] = COMMANDER_ID_OFFSET + idx
         cls[commander_item_name(idx)] = ItemClassification.progression
-        ids[commander_upgrade_item_name(idx)] = ITEM_ID_BASE + COMMANDER_UPGRADE_ID_OFFSET + idx
+        ids[commander_upgrade_item_name(idx)] = COMMANDER_UPGRADE_ID_OFFSET + idx
         cls[commander_upgrade_item_name(idx)] = ItemClassification.useful
     for borg_id, borg in BORGS.items():
-        ids[borg.name] = ITEM_ID_BASE + BORG_ID_OFFSET + borg_id
+        ids[borg.name] = BORG_ID_OFFSET + borg_id
         cls[borg.name] = ItemClassification.useful
-        ids[fragment_item_name(borg_id)] = ITEM_ID_BASE + FRAGMENT_ID_OFFSET + borg_id
+        ids[fragment_item_name(borg_id)] = FRAGMENT_ID_OFFSET + borg_id
         cls[fragment_item_name(borg_id)] = ItemClassification.useful
     return ids, cls
 

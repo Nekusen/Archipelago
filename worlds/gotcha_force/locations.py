@@ -27,8 +27,6 @@ from .regions import STORY_MAP_REGION
 if TYPE_CHECKING:
     from .world import GotchaForceWorld
 
-LOCATION_ID_BASE: Final = 690_000_000
-
 CHECKS_PER_CHAPTER: Final = 3
 
 CHECK_CHAPTERS: Final = tuple(sorted(CHAPTERS))
@@ -46,7 +44,7 @@ SINGLE_PIECE: Final = 1
 
 GACHA_WHOLE_OFFSET: Final = 7
 
-ACHIEVEMENT_ID_BASE: Final = LOCATION_ID_BASE + 100_000
+ACHIEVEMENT_ID_BASE: Final = 100_000
 RIVAL_STYLE_ID_OFFSET: Final = 100
 ACE_DUEL_ID_OFFSET: Final = 200
 RIVAL_STYLE_ALL_ID_OFFSET: Final = 1000
@@ -76,19 +74,15 @@ def _build_table() -> dict[str, int]:
     ids: dict[str, int] = {}
     for chapter in CHECK_CHAPTERS:
         for check_number in range(1, CHECKS_PER_CHAPTER + 1):
-            ids[check_location_name(chapter, check_number)] = (
-                LOCATION_ID_BASE + chapter * IDS_PER_CHAPTER + check_number - 1
-            )
+            ids[check_location_name(chapter, check_number)] = chapter * IDS_PER_CHAPTER + check_number - 1
     for ordinal, reward in enumerate(REWARDS):
-        ids[reward.name] = LOCATION_ID_BASE + REWARD_ID_OFFSET + ordinal
+        ids[reward.name] = REWARD_ID_OFFSET + ordinal
     for borg_id, register in GACHA_REGISTERS.items():
         for piece in range(1, register.pieces + 1):
-            ids[gacha_location_name(borg_id, piece)] = (
-                LOCATION_ID_BASE + GACHA_ID_OFFSET + borg_id * GACHA_IDS_PER_BORG + piece - 1
-            )
+            ids[gacha_location_name(borg_id, piece)] = GACHA_ID_OFFSET + borg_id * GACHA_IDS_PER_BORG + piece - 1
         if register.pieces > SINGLE_PIECE:
             ids[gacha_whole_location_name(borg_id)] = (
-                LOCATION_ID_BASE + GACHA_ID_OFFSET + borg_id * GACHA_IDS_PER_BORG + GACHA_WHOLE_OFFSET
+                GACHA_ID_OFFSET + borg_id * GACHA_IDS_PER_BORG + GACHA_WHOLE_OFFSET
             )
     ids.update(_achievement_ids())
     return ids
