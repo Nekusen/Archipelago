@@ -4,12 +4,8 @@ import struct
 from dataclasses import dataclass
 from typing import Final
 
-from CommonClient import logger
-
 from .. import slot_keys
 from ..data import addresses
-from ..data.borgs import BORGS
-from ..data.companions import COMPANIONS
 from ..data.gacha import (
     GACHA_PRIZE_MODE_BYTE,
     GACHA_RECORD_LEN,
@@ -114,7 +110,6 @@ class CheckStage(Stage):
         force_ids, cost = self._read_battle_force()
         minimum = int(client_logic.slot_value(slot, slot_keys.TRIBE_FORCE_MIN_COST))
         result = self._battle_result or BattleResult(None, None)
-        names = [client_logic.borg_name(i) if i in BORGS else f"{i:#06x}" for i in force_ids]
         for chapter in newly_won:
             earned = achievements.achievements_met(
                 specs,
@@ -125,11 +120,6 @@ class CheckStage(Stage):
                 minimum,
                 finisher_slot=result.finisher_slot,
                 own_losses=result.own_losses,
-            )
-            logger.info(
-                f"[achievement] Chapter {chapter:03d} won with partner "
-                f"{COMPANIONS.get(partner, NO_PARTNER_LABEL)} and force "
-                f"{names} (cost {cost}): {len(earned)} check(s)"
             )
             for spec in earned:
                 self.achievement_pending.add(client_achievements.achievement_id(spec))
@@ -261,7 +251,6 @@ class CheckStage(Stage):
         for location in self.ctx.gacha_map.get(borg, []):
             if location not in self.ctx.checked_locations and location not in self.gacha_pending:
                 self.gacha_pending.add(location)
-                logger.info(f"[gacha] {BORGS[borg].name}: check")
                 break
 
     def _restore_accumulators(self, progress: int) -> None:

@@ -260,7 +260,6 @@ async def game_watcher(ctx: GotchaForceContext) -> None:
         failures.recovered()
         if victories is None:
             continue
-        _log_mission_change(ctx, guardian)
         slot = ctx.slot_data
         if slot is not None and ctx.server is not None:
             await _send_checks(ctx, guardian, victories, slot)
@@ -323,15 +322,6 @@ async def _find_game(ctx: GotchaForceContext, guardian: Guardian, hook_warned: b
         guardian.on_game_detected()
         ctx.game_valid = True
     return True
-
-
-def _log_mission_change(ctx: GotchaForceContext, guardian: Guardian) -> None:
-    chapter = guardian.current_chapter()
-    if chapter is None or chapter == ctx.last_chapter:
-        return
-    ctx.last_chapter = chapter
-    logger.info(f"[mission] chapter {chapter:03d} ({client_logic.chapter_zone_name(chapter)})")
-
 
 async def _send_checks(
     ctx: GotchaForceContext, guardian: Guardian, victories: dict[int, int], slot: client_logic.SlotData

@@ -180,4 +180,3 @@ class CollectionStage(Stage):
             exp = self.dolphin.read_u32(offset) or 0
             self.dolphin.write_u32(offset, exp + XP_PER_ITEM * new_items)
         state.client_state_set(key, XP_STATE_FIELD, ap_state.xp_items)
-        logger.info(f"Borg Experience applied (+{XP_PER_ITEM * new_items} to the collection)")

@@ -33,7 +33,7 @@ def _patch_iso(*args: str) -> None:
 
     iso_path = args[0] if args else _ask_for_iso()
     if not iso_path:
-        logging.info("No ISO selected; nothing was patched.")
+        logging.info("No ISO selected.")
         return
     existed = os.path.exists(default_output(iso_path))
     try:
@@ -70,7 +70,7 @@ def _done_message(patched_path: str, existed: bool) -> str:
     return (
         f"Done! Patched copy {action}:\n{patched_path}\n\n"
         "Open this copy in Dolphin to play. It works for every "
-        "seed; run this patcher again only after updating the "
+        "seed. Run this patcher again only after updating the "
         "apworld. Your original ISO was not changed."
     )
 
