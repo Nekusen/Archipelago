@@ -5,10 +5,11 @@ import random
 from collections.abc import Mapping, Sequence
 from typing import NamedTuple
 
-from ..data.addresses import NO_ID, QREC_FLAGS, QREC_ID
-from ..data.borgs import BORGS, COSTS, RANDOMIZABLE
+from ..data.addresses import NO_ID, QREC_FLAGS, QREC_HEIGHT, QREC_ID
+from ..data.borgs import BORGS, COSTS, DEATH_BOMB, DEATH_ICBM, RANDOMIZABLE
 from ..data.chapters import CHAPTERS, GALACTIC_EMPEROR_CHAPTERS, TUTORIAL_CHAPTER
 from ..data.packs import (
+    AIR_SPAWN_HEIGHT,
     DARK_KNIGHT,
     DARK_KNIGHT_ESCORTS,
     FUSION_PAIRS,
@@ -22,6 +23,7 @@ from ..data.packs import (
     QUEUE2,
     QUEUE_RECORD,
     SPAWN_FLAGS,
+    SPAWN_HEIGHTS,
     Queue,
 )
 from ..data.partner_forces import PARTNER_FORCES
@@ -30,7 +32,10 @@ from ..data.spawns import (
     ALT_FORMS,
     BOSS_ADDRS,
     BOSS_IDS,
+    COMMANDER_FORCES,
     COMMANDER_TARGETS,
+    FORCE_CELLS,
+    QUEUE_CELLS,
     SCENARIO_AI_TARGETS,
     SIGNATURE_BORGS,
     SPAWN_COSTS,
@@ -93,6 +98,7 @@ _MACHINE_INSERT_DPOS = (0.0, 0.0, 200.0)
 NO_BURST_BIT = 0x40
 
 FLAGS_OFF = QREC_FLAGS - QREC_ID
+HEIGHT_OFF = QREC_HEIGHT - QREC_ID
 
 PROTECTED_CHAPTERS = frozenset(GALACTIC_EMPEROR_CHAPTERS) | frozenset({TUTORIAL_CHAPTER})
 
@@ -119,6 +125,7 @@ class Escort:
 class EnemyPlan:
     assignments: dict[int, int | None] = dataclasses.field(default_factory=dict)
     flag_writes: dict[int, int] = dataclasses.field(default_factory=dict)
+    enemy_heights: dict[int, float] = dataclasses.field(default_factory=dict)
     inserts: dict[int, tuple[Escort, ...]] = dataclasses.field(default_factory=dict)
     removes: set[int] = dataclasses.field(default_factory=set)
     packs: dict[int, int] = dataclasses.field(default_factory=dict)
@@ -290,6 +297,7 @@ def plan_enemies(seed: int, mode: int, ace_mode: int = SPECIAL_VANILLA, boss_mod
         for cell, new_id in zip(cells, ids, strict=True):
             _place_boss(plan, rng_escort, mode, cell, new_id)
     _relocate_pairs(plan)
+    _place_enemy_heights(plan)
     return plan
 
 
@@ -494,6 +502,19 @@ def _relocate_pairs(plan: EnemyPlan) -> None:
 def _swap(final: dict[int, int | None], cell_a: int, cell_b: int) -> None:
     if cell_a != cell_b:
         final[cell_a], final[cell_b] = final[cell_b], final[cell_a]
+
+
+def _place_enemy_heights(plan: EnemyPlan) -> None:
+    for cell, borg in plan.assignments.items():
+        if borg in (DEATH_ICBM, DEATH_BOMB):
+            if cell in FORCE_CELLS:
+                for enemy_commander_force in COMMANDER_FORCES.values():
+                    if enemy_commander_force.cells[0] == cell and enemy_commander_force.height != 0:
+                        plan.enemy_heights[enemy_commander_force.height_cell] = max(
+                            AIR_SPAWN_HEIGHT, enemy_commander_force.height
+                        )
+            elif cell in QUEUE_CELLS:
+                plan.enemy_heights[cell + HEIGHT_OFF] = max(AIR_SPAWN_HEIGHT, SPAWN_HEIGHTS.get(cell, 0.0))
 
 
 def cell_chapter(cell: int) -> int:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import struct
 from typing import TYPE_CHECKING, Any
 
 import Utils
@@ -208,6 +209,7 @@ class GotchaForceContext(CommonContext):
             )
         )
         writes.update(plan.flag_writes)
+        _write_enemy_heights(plan, writes)
         return writes
 
     def _plan_gacha(self, slot: dict[str, Any], extra: dict[int, list[int]]) -> None:
@@ -332,3 +334,9 @@ async def _send_checks(
         ctx.finished_game = True
         await ctx.send_msgs([{"cmd": "StatusUpdate", "status": ClientStatus.CLIENT_GOAL}])
         logger.info("Goal completed!")
+
+
+def _write_enemy_heights(plan: EnemyPlan, writes: dict[int, int]) -> None:
+    for height_cell, height_value in plan.enemy_heights.items():
+        for position, byte in enumerate(struct.pack(">f", height_value)):
+            writes[height_cell + position] = byte

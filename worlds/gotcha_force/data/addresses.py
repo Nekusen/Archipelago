@@ -124,6 +124,7 @@ QREC_ID: Final = 0x08              # u16: borg id, the spawn cell
 QREC_FLAGS: Final = 0x0E           # u8: behaviour flags
 QREC_TARGET: Final = 0x10          # u8: 1 = mission target
 QREC_POS: Final = 0x14             # 3 x f32: position
+QREC_HEIGHT: Final = 0x18          # f32: the Y of the position; 0.0 = snap to the ground
 QREC_LOOP_MARK_OFF: Final = 0      # loop record: s16 mark
 QREC_LOOP_BACK_OFF: Final = 2      # loop record: s16 records to go back
 STAGE_ENTRY: Final = 16            # bytes per STAGE_OBJ_TABLE entry: 4 u32

@@ -221,6 +221,7 @@ G_BLACK = 0x062a
 # These borgs suicide, so they can't be starting borgs
 WALKING_BOMB = 0x0809
 DEATH_ICBM = 0x0d06
+DEATH_BOMB = 0x0d07
 
 
 # the Death Borgs: their gacha thresholds are about ten times everyone else's

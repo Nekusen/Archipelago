@@ -24,6 +24,12 @@ class CommanderTarget(NamedTuple):
     latest_chapter: int         # the deepest chapter that uses the participant: its sphere rules
 
 
+class CommanderForce(NamedTuple):
+    cells: tuple[int, ...]      # u16 addresses of its borg ids, in the order they are sent out
+    height_cell: int            # f32 address: the spawn height of the participant
+    height: float               # vanilla; 0.0 = on the ground
+
+
 # chapter -> its spawns
 SPAWNS: dict[int, tuple[Spawn, ...]] = {
     1: (
@@ -5470,6 +5476,102 @@ COMMANDER_TARGETS: tuple[CommanderTarget, ...] = (
     CommanderTarget(87, 0x8037ffbd, 0x05, 0x8037ffbf, 0, 172),
     CommanderTarget(88, 0x8037ffd1, 0x02, 0x8037ffd3, 0, 7),
 )
+
+# participant -> the force it fields: a plain list of u16 borg ids, sent out
+# one after another. Participants 11 and 88 share the same list.
+COMMANDER_FORCES: dict[int, CommanderForce] = {
+    0: CommanderForce((0x804357c0,), 0x8037f8f8, 0.0),
+    2: CommanderForce((0x804357c8,), 0x8037f920, 0.0),
+    3: CommanderForce((0x804357cc, 0x804357ce), 0x8037f934, 0.0),
+    4: CommanderForce((0x804357d4,), 0x8037f948, 0.0),
+    5: CommanderForce((0x804357d8, 0x804357da), 0x8037f95c, 0.0),
+    6: CommanderForce((0x804357e0,), 0x8037f970, 0.0),
+    7: CommanderForce((0x804357e4,), 0x8037f984, 0.0),
+    8: CommanderForce((0x804357e8,), 0x8037f998, 0.0),
+    9: CommanderForce((0x804357ec,), 0x8037f9ac, 0.0),
+    10: CommanderForce((0x804357f0, 0x804357f2, 0x804357f4), 0x8037f9c0, 775.0),
+    11: CommanderForce((0x804357f8, 0x804357fa), 0x8037f9d4, 0.0),
+    12: CommanderForce((0x80435800, 0x80435802), 0x8037f9e8, 0.0),
+    13: CommanderForce((0x80435808, 0x8043580a), 0x8037f9fc, 0.0),
+    14: CommanderForce((0x80435810, 0x80435812, 0x80435814), 0x8037fa10, 0.0),
+    15: CommanderForce((0x80435818, 0x8043581a, 0x8043581c), 0x8037fa24, 0.0),
+    16: CommanderForce((0x80435820, 0x80435822, 0x80435824), 0x8037fa38, 0.0),
+    17: CommanderForce((0x80435828, 0x8043582a), 0x8037fa4c, 0.0),
+    18: CommanderForce((0x8037ffe4, 0x8037ffe6, 0x8037ffe8, 0x8037ffea), 0x8037fa60, 3500.0),
+    19: CommanderForce((0x80435830,), 0x8037fa74, 0.0),
+    20: CommanderForce((0x8037fff0, 0x8037fff2, 0x8037fff4, 0x8037fff6), 0x8037fa88, 0.0),
+    22: CommanderForce((0x8037fffc, 0x8037fffe, 0x80380000, 0x80380002), 0x8037fab0, 0.0),
+    23: CommanderForce((0x80380008, 0x8038000a, 0x8038000c, 0x8038000e), 0x8037fac4, 0.0),
+    24: CommanderForce((0x8043583c, 0x8043583e, 0x80435840), 0x8037fad8, 0.0),
+    25: CommanderForce((0x80380014, 0x80380016, 0x80380018, 0x8038001a), 0x8037faec, 0.0),
+    26: CommanderForce((0x80435844, 0x80435846, 0x80435848), 0x8037fb00, 0.0),
+    27: CommanderForce((0x8043584c, 0x8043584e, 0x80435850), 0x8037fb14, 0.0),
+    28: CommanderForce((0x80435854, 0x80435856, 0x80435858), 0x8037fb28, 0.0),
+    29: CommanderForce((0x8043585c, 0x8043585e, 0x80435860), 0x8037fb3c, 0.0),
+    30: CommanderForce((0x80380020, 0x80380022, 0x80380024, 0x80380026), 0x8037fb50, 0.0),
+    31: CommanderForce((0x80435864, 0x80435866, 0x80435868), 0x8037fb64, 0.0),
+    32: CommanderForce((0x8038002c, 0x8038002e, 0x80380030, 0x80380032), 0x8037fb78, 0.0),
+    33: CommanderForce((0x80380038, 0x8038003a, 0x8038003c, 0x8038003e), 0x8037fb8c, 0.0),
+    34: CommanderForce((0x8043586c, 0x8043586e), 0x8037fba0, 555.0),
+    35: CommanderForce((0x80435874,), 0x8037fbb4, 0.0),
+    36: CommanderForce((0x80435878, 0x8043587a, 0x8043587c), 0x8037fbc8, 0.0),
+    37: CommanderForce((0x80435880, 0x80435882, 0x80435884), 0x8037fbdc, 0.0),
+    38: CommanderForce((0x80435888, 0x8043588a, 0x8043588c), 0x8037fbf0, 602.0),
+    39: CommanderForce((0x80435890, 0x80435892), 0x8037fc04, 0.0),
+    40: CommanderForce((0x80380044, 0x80380046, 0x80380048, 0x8038004a), 0x8037fc18, 0.0),
+    41: CommanderForce((0x80380050, 0x80380052, 0x80380054, 0x80380056), 0x8037fc2c, 0.0),
+    43: CommanderForce((0x8043589c, 0x8043589e, 0x804358a0), 0x8037fc54, 0.0),
+    44: CommanderForce((0x804358a4, 0x804358a6, 0x804358a8), 0x8037fc68, 0.0),
+    45: CommanderForce((0x80380068, 0x8038006a, 0x8038006c, 0x8038006e, 0x80380070), 0x8037fc7c, 0.0),
+    46: CommanderForce((0x8038005c, 0x8038005e, 0x80380060, 0x80380062), 0x8037fc90, 0.0),
+    47: CommanderForce((0x80380074, 0x80380076, 0x80380078, 0x8038007a), 0x8037fca4, 2000.0),
+    48: CommanderForce((0x804358ac,), 0x8037fcb8, 640.0),
+    49: CommanderForce((0x804358b0, 0x804358b2), 0x8037fccc, 0.0),
+    50: CommanderForce((0x804358b8, 0x804358ba, 0x804358bc), 0x8037fce0, 1500.0),
+    51: CommanderForce((0x804358c0, 0x804358c2), 0x8037fcf4, 612.0),
+    52: CommanderForce((0x804358c8, 0x804358ca, 0x804358cc), 0x8037fd08, 612.0),
+    53: CommanderForce((0x804358d0, 0x804358d2), 0x8037fd1c, 0.0),
+    54: CommanderForce((0x804358d8, 0x804358da, 0x804358dc), 0x8037fd30, 0.0),
+    55: CommanderForce((0x804358e0, 0x804358e2, 0x804358e4), 0x8037fd44, 0.0),
+    56: CommanderForce((0x804358e8, 0x804358ea, 0x804358ec), 0x8037fd58, 0.0),
+    57: CommanderForce((0x804358f0, 0x804358f2, 0x804358f4), 0x8037fd6c, 0.0),
+    58: CommanderForce((0x804358f8, 0x804358fa, 0x804358fc), 0x8037fd80, 0.0),
+    59: CommanderForce((0x80435900, 0x80435902, 0x80435904), 0x8037fd94, 0.0),
+    60: CommanderForce((0x80380080, 0x80380082, 0x80380084, 0x80380086), 0x8037fda8, 3000.0),
+    61: CommanderForce((0x8038008c, 0x8038008e, 0x80380090, 0x80380092, 0x80380094, 0x80380096), 0x8037fdbc, 0.0),
+    62: CommanderForce((0x80435908, 0x8043590a, 0x8043590c), 0x8037fdd0, 0.0),
+    64: CommanderForce((0x80435910,), 0x8037fdf8, 1000.0),
+    65: CommanderForce((0x803800ac, 0x803800ae, 0x803800b0, 0x803800b2), 0x8037fe0c, 0.0),
+    66: CommanderForce((0x803800b8, 0x803800ba, 0x803800bc, 0x803800be), 0x8037fe20, 0.0),
+    67: CommanderForce((0x80435914,), 0x8037fe34, 1400.0),
+    68: CommanderForce((0x803800c4, 0x803800c6, 0x803800c8, 0x803800ca, 0x803800cc), 0x8037fe48, 2000.0),
+    69: CommanderForce((0x803800d0, 0x803800d2, 0x803800d4, 0x803800d6), 0x8037fe5c, 1500.0),
+    70: CommanderForce((0x803800dc, 0x803800de, 0x803800e0, 0x803800e2, 0x803800e4), 0x8037fe70, 770.0),
+    71: CommanderForce((0x803800e8, 0x803800ea, 0x803800ec, 0x803800ee), 0x8037fe84, 0.0),
+    72: CommanderForce((0x803800f4, 0x803800f6, 0x803800f8, 0x803800fa, 0x803800fc), 0x8037fe98, 0.0),
+    73: CommanderForce((0x80380100, 0x80380102, 0x80380104, 0x80380106), 0x8037feac, 0.0),
+    74: CommanderForce((0x80435918, 0x8043591a, 0x8043591c), 0x8037fec0, 0.0),
+    75: CommanderForce((0x8038010c, 0x8038010e, 0x80380110, 0x80380112, 0x80380114), 0x8037fed4, 0.0),
+    76: CommanderForce((0x80435920, 0x80435922, 0x80435924), 0x8037fee8, 0.0),
+    77: CommanderForce((0x80380118, 0x8038011a, 0x8038011c, 0x8038011e), 0x8037fefc, 0.0),
+    78: CommanderForce((0x80435928, 0x8043592a, 0x8043592c), 0x8037ff10, 70.0),
+    79: CommanderForce((0x80380124, 0x80380126, 0x80380128, 0x8038012a, 0x8038012c, 0x8038012e), 0x8037ff24, 70.0),
+    80: CommanderForce((0x80380134, 0x80380136, 0x80380138, 0x8038013a), 0x8037ff38, 0.0),
+    81: CommanderForce((0x80435930, 0x80435932), 0x8037ff4c, 1550.0),
+    82: CommanderForce((0x80435938, 0x8043593a, 0x8043593c), 0x8037ff60, 0.0),
+    83: CommanderForce((0x80380140, 0x80380142, 0x80380144, 0x80380146), 0x8037ff74, 0.0),
+    84: CommanderForce((0x8038014c, 0x8038014e, 0x80380150, 0x80380152), 0x8037ff88, 0.0),
+    85: CommanderForce((0x80435940, 0x80435942, 0x80435944), 0x8037ff9c, 0.0),
+    86: CommanderForce((0x80380158, 0x8038015a, 0x8038015c, 0x8038015e, 0x80380160), 0x8037ffb0, 0.0),
+    87: CommanderForce((0x80435948, 0x8043594a, 0x8043594c), 0x8037ffc4, 0.0),
+    88: CommanderForce((0x804357f8, 0x804357fa), 0x8037ffd8, 0.0),
+}
+
+# The two kinds of spawn cell. A force cell is one id of a commander's list,
+# with nothing but other ids around it; a queue cell is the id field of a
+# 0x20-byte queue record, which has its own AI, level, flags and position.
+FORCE_CELLS: frozenset[int] = frozenset(cell for force in COMMANDER_FORCES.values() for cell in force.cells)
+QUEUE_CELLS: frozenset[int] = frozenset(spawn.cell for rows in SPAWNS.values() for spawn in rows) - FORCE_CELLS
 
 # transformed form -> base (obtainable) form. A spawn with
 # an alternate form is randomized like any other.
