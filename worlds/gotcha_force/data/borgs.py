@@ -217,6 +217,8 @@ NEO_G_RED_NAME = "Neo G Red"
 G_RED_COST = 300
 NEO_G_RED_COST = 500
 G_BLACK = 0x062a
+NORMAL_NINJA = 0x0000
+REVOLVER_GUNMAN = 0x0100
 
 # These borgs suicide, so they can't be starting borgs
 WALKING_BOMB = 0x0809
