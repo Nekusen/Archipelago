@@ -89,6 +89,7 @@ _IDS_BY_NAME = {name.casefold(): borg_id for borg_id, name in NAMES.items()}
 
 MIN_BALANCED_COST = 10
 BALANCED_COST_FACTOR = 2
+AMPLIFIED_POOL_MARGIN = 150
 
 PROGRESSIVE_NOISE = (-1, 0, 0, 0, 1)
 
@@ -407,8 +408,13 @@ def _balanced_pick(rng: random.Random, base_cost: int, enemy_randomization_black
     blacklisted = get_blacklisted_enemies(enemy_randomization_blacklist)
     candidates = [candidate for candidate in _CANDIDATES if candidate not in blacklisted]
     pool = [b for b in candidates if low <= COSTS[b] <= high]
-    if not pool:
-        return None
+    if len(pool) <= 1:
+        closest_borg = min(candidates, key=lambda b: abs(COSTS[b] - base_cost))
+        minimum_distance = abs(COSTS[closest_borg] - base_cost)
+        amplified_pool = [
+            b for b in candidates if abs(COSTS[b] - base_cost) <= minimum_distance + AMPLIFIED_POOL_MARGIN
+        ]
+        return rng.choice(amplified_pool)
     return rng.choice(pool)
 
 
@@ -447,8 +453,17 @@ def _boss_ids(
         return None
     blacklisted = get_blacklisted_enemies(enemy_randomization_blacklist)
     candidates = tuple(candidate for candidate in _CANDIDATES if candidate not in blacklisted)
+    allowed_packs: list[int] = []
+    for pack in PACK_KINDS:
+        leader, escorts = pack_escorts(pack)
+        if leader in blacklisted:
+            continue
+        if any(escort.borg in blacklisted for escort in escorts):
+            continue
+        allowed_packs.append(pack)
+    pack_candidates = PACK_KINDS if boss_mode == BOSS_ROSTER else tuple(allowed_packs)
     singles = BOSS_IDS if boss_mode == BOSS_ROSTER else candidates
-    return [rng_boss.choice(singles + PACK_KINDS if cell in _PACK_ELIGIBLE else singles) for cell in cells]
+    return [rng_boss.choice(singles + pack_candidates if cell in _PACK_ELIGIBLE else singles) for cell in cells]
 
 
 def _in_queue(queue: Queue, cell: int) -> bool:
