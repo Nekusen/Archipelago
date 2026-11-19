@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from typing import TYPE_CHECKING, Final, NamedTuple
+from typing import TYPE_CHECKING, Any, Final, NamedTuple
 
 from .. import slot_keys
 from ..data.chapters import CHAPTERS
@@ -81,6 +81,14 @@ def in_logic_view(
         ap_state, slot, allowed, ctx.chapter_costs, client_logic.gf_ratio_for_slot(slot)
     )
     return slot, ap_state, allowed, in_logic
+
+
+def hinted_location_names(hints: Iterable[Mapping[str, Any]], slot: int | None) -> frozenset[str]:
+    return frozenset(
+        LOCATION_ID_TO_NAME[hint["location"]]
+        for hint in hints
+        if hint["finding_player"] == slot and not hint["found"] and hint["location"] in LOCATION_ID_TO_NAME
+    )
 
 
 def partner_hint(chapter: int, unlocked: Iterable[int]) -> str:

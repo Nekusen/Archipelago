@@ -107,6 +107,10 @@ class GotchaForceContext(CommonContext):
         slot, _ap, _allowed, in_logic = view
         return client_logic.go_mode(in_logic, slot)
 
+    def hinted_locations(self) -> frozenset[str]:
+        hints = self.stored_data.get(f"_read_hints_{self.team}_{self.slot}", [])
+        return tracker.hinted_location_names(hints, self.slot)
+
     def tracker_rows(
         self, show_out_of_logic: bool = True, show_unavailable: bool = False
     ) -> list[tracker.TrackerSection] | None:

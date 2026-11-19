@@ -50,6 +50,8 @@ ROW_CHECK_COLORS: Final = {
     ROW_OUT_OF_LOGIC: (1, 1, 1, 0.4),
     ROW_UNAVAILABLE: (1, 0.85, 0.85, 0.3),
 }
+HINTED_COLOR: Final = (0.87, 0.63, 0.87, 1)
+HINTED_MARK: Final = "  [hinted]"
 ZONE_TITLE_COLOR: Final = (1, 0.85, 0.3, 1)
 INVENTORY_TITLE_COLOR: Final = (0.55, 0.9, 0.75, 1)
 LINE_COLORS: Final = {LINE_HAVE: (1, 1, 1, 1), LINE_MISSING: (1, 1, 1, 0.45), LINE_INFO: (0.8, 0.95, 1, 1)}
@@ -206,6 +208,7 @@ def build_manager(ctx: GotchaForceContext, ui: type[GameManager]) -> type[GameMa
                         self.show_out_of_logic_toggle.state == TOGGLE_ON,
                         self.show_unavailable_toggle.state == TOGGLE_ON,
                     ),
+                    ctx.hinted_locations(),
                 )
             except Exception:
                 logger.debug("tracker refresh failed", exc_info=True)
@@ -215,10 +218,10 @@ def build_manager(ctx: GotchaForceContext, ui: type[GameManager]) -> type[GameMa
             snapshot = self._read_context()
             if snapshot is None:
                 return
-            go_mode, groups, sections = snapshot
+            go_mode, groups, sections, hinted = snapshot
             self.tracker_go_mode.text = GO_MODE_TEXT[bool(go_mode)]
             self._update_inventory(groups)
-            self._update_rows(sections, groups is not None, self.show_spoilers_toggle.state == TOGGLE_ON)
+            self._update_rows(sections, groups is not None, self.show_spoilers_toggle.state == TOGGLE_ON, hinted)
 
         def _update_inventory(self, groups: list[InventoryGroup] | None) -> None:
             from kivy.uix.treeview import TreeViewLabel
@@ -239,7 +242,9 @@ def build_manager(ctx: GotchaForceContext, ui: type[GameManager]) -> type[GameMa
                 for state, text in group.lines:
                     tree.add_node(TreeViewLabel(text=text, markup=True, color=LINE_COLORS[state]), node)
 
-        def _update_rows(self, sections: list[TrackerSection] | None, connected: bool, spoilers: bool) -> None:
+        def _update_rows(
+            self, sections: list[TrackerSection] | None, connected: bool, spoilers: bool, hinted: frozenset[str]
+        ) -> None:
             from kivy.uix.treeview import TreeViewLabel
 
             signature = repr(sections)
@@ -260,11 +265,16 @@ def build_manager(ctx: GotchaForceContext, ui: type[GameManager]) -> type[GameMa
                     tree, f"zone:{tile}", f"{zone} ({_zone_total(rows)})", ZONE_TITLE_COLOR, True
                 )
                 for row in rows:
-                    self._add_mission_row(tree, zone_node, row, recruited, spoilers)
+                    self._add_mission_row(tree, zone_node, row, recruited, spoilers, hinted)
 
         @staticmethod
         def _add_mission_row(
-            tree: TreeView, zone_node: TreeViewNode, row: MissionRow, recruited: set[int] | None, spoilers: bool
+            tree: TreeView,
+            zone_node: TreeViewNode,
+            row: MissionRow,
+            recruited: set[int] | None,
+            spoilers: bool,
+            hinted: frozenset[str],
         ) -> None:
             from kivy.uix.treeview import TreeViewLabel
 
@@ -273,7 +283,9 @@ def build_manager(ctx: GotchaForceContext, ui: type[GameManager]) -> type[GameMa
             )
             names = row.names if spoilers else tracker.hide_gacha_spoilers(row.names)
             for name in names:
-                tree.add_node(TreeViewLabel(text=name, color=ROW_CHECK_COLORS[row.state]), chapter_node)
+                is_hinted = name.removesuffix(tracker.OUT_OF_LOGIC_MARK) in hinted
+                color = HINTED_COLOR if is_hinted else ROW_CHECK_COLORS[row.state]
+                tree.add_node(TreeViewLabel(text=name, color=color), chapter_node)
 
     return GotchaForceManager
 
