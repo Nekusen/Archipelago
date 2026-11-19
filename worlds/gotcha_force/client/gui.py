@@ -51,7 +51,6 @@ ROW_CHECK_COLORS: Final = {
     ROW_UNAVAILABLE: (1, 0.85, 0.85, 0.3),
 }
 HINTED_COLOR: Final = (0.87, 0.63, 0.87, 1)
-HINTED_MARK: Final = "  [hinted]"
 ZONE_TITLE_COLOR: Final = (1, 0.85, 0.3, 1)
 INVENTORY_TITLE_COLOR: Final = (0.55, 0.9, 0.75, 1)
 LINE_COLORS: Final = {LINE_HAVE: (1, 1, 1, 1), LINE_MISSING: (1, 1, 1, 0.45), LINE_INFO: (0.8, 0.95, 1, 1)}
@@ -247,7 +246,7 @@ def build_manager(ctx: GotchaForceContext, ui: type[GameManager]) -> type[GameMa
         ) -> None:
             from kivy.uix.treeview import TreeViewLabel
 
-            signature = repr(sections)
+            signature = repr(sections) + repr(sorted(hinted))
             if signature == self._tracker_signature:
                 return
             self._tracker_signature = signature
@@ -284,7 +283,8 @@ def build_manager(ctx: GotchaForceContext, ui: type[GameManager]) -> type[GameMa
             names = row.names if spoilers else tracker.hide_gacha_spoilers(row.names)
             for name in names:
                 is_hinted = name.removesuffix(tracker.OUT_OF_LOGIC_MARK) in hinted
-                color = HINTED_COLOR if is_hinted else ROW_CHECK_COLORS[row.state]
+                base = ROW_CHECK_COLORS[row.state]
+                color = [*HINTED_COLOR[:3], base[3]] if is_hinted else base
                 tree.add_node(TreeViewLabel(text=name, color=color), chapter_node)
 
     return GotchaForceManager
