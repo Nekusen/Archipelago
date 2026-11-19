@@ -408,7 +408,14 @@ class EnemyRandomization(Choice):
 
 
 class EnemyRandomizationBlacklist(OptionSet):
-    """Prevents listed borgs from appearing in battles when Enemy Randomization is on."""
+    """Prevents listed borgs from appearing in battles when Enemy Randomization is on.
+    It only takes effect if Enemy Randomization is on "Chaos" or "Balanced".
+
+    For enemy Commanders, it only applies the blacklist if the randomization mode is "Full Random".
+    For Bosses, it only applies if the randomization mode is "Full Random".
+
+    This blacklist does not affect borgs for your partners
+    """
 
     display_name = "Enemy Randomization Blacklist"
     valid_keys_casefold = True
