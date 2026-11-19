@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import dataclasses
 import random
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import NamedTuple
 
+from ..data.achievements import TRIBES
 from ..data.addresses import NO_ID, QREC_FLAGS, QREC_HEIGHT, QREC_ID
-from ..data.borgs import BORGS, COSTS, DEATH_BOMB, DEATH_ICBM, RANDOMIZABLE
+from ..data.borgs import BORGS, COSTS, DEATH_BOMB, DEATH_ICBM, NAMES, RANDOMIZABLE
 from ..data.chapters import CHAPTERS, GALACTIC_EMPEROR_CHAPTERS, TUTORIAL_CHAPTER
 from ..data.packs import (
     AIR_SPAWN_HEIGHT,
@@ -65,6 +66,7 @@ PARTNER_RANDOM = 2
 _SALT_SHIFT = 4
 _SALT_BOSS = 0xB055
 _SALT_ACE = 0xACE
+_SALT_ACE_REROLL = 0xACE2
 _SALT_PARTNER = 0x9A27
 _SALT_ESCORT = 0xE5C0
 _SALT_AI = 0xA1
@@ -81,6 +83,9 @@ _VANILLA_ID: dict[int, int | None] = {spawn.cell: spawn.borg for rows in SPAWNS.
 _CELL_CHAPTER: dict[int, int] = {spawn.cell: chapter for chapter, rows in SPAWNS.items() for spawn in rows}
 
 _CANDIDATES: tuple[int, ...] = RANDOMIZABLE
+
+_IDS_BY_NAME = {name.casefold(): borg_id for borg_id, name in NAMES.items()}
+
 
 MIN_BALANCED_COST = 10
 BALANCED_COST_FACTOR = 2
@@ -175,10 +180,12 @@ def assign_levels(seed: int, mode: int, lo: int, hi: int) -> dict[int, int]:
     return _assign_stat(seed, LEVEL_TARGET, mode, lo, hi)
 
 
-def assign_partners(seed: int, borgs_mode: int, ace_mode: int = SPECIAL_VANILLA) -> dict[int, int]:
+def assign_partners(
+    seed: int, borgs_mode: int, enemy_randomization_blacklist: Iterable[str], ace_mode: int = SPECIAL_VANILLA
+) -> dict[int, int]:
     if borgs_mode == PARTNER_VANILLA and ace_mode == SPECIAL_VANILLA:
         return {}
-    ace_map = _ace_permutation(seed, ace_mode)
+    ace_map = _ace_permutation(seed, ace_mode, True, enemy_randomization_blacklist)
     rng = _stream(seed, _SALT_PARTNER)
     out: dict[int, int] = {}
     for commander in sorted(PARTNER_FORCES):
@@ -193,16 +200,32 @@ def assign_partners(seed: int, borgs_mode: int, ace_mode: int = SPECIAL_VANILLA)
     return out
 
 
-def _ace_permutation(seed: int, ace_mode: int) -> dict[int, int]:
+def _ace_permutation(
+    seed: int, ace_mode: int, partner: bool, enemy_randomization_blacklist: Iterable[str]
+) -> dict[int, int]:
     rng = _stream(seed, _SALT_ACE)
     if ace_mode == SPECIAL_SHUFFLE:
         commanders = sorted(ACE_ADDRS)
         aces = [SIGNATURE_BORGS[c] for c in commanders]
         rng.shuffle(aces)
         return dict(zip(commanders, aces, strict=True))
-    if ace_mode == SPECIAL_RANDOM:
+    if ace_mode == SPECIAL_RANDOM and partner:
         return {c: rng.choice(_CANDIDATES) for c in sorted(ACE_ADDRS)}
+    if ace_mode == SPECIAL_RANDOM and not partner:
+        reroll_rng = _stream(seed, _SALT_ACE_REROLL)
+        blacklisted = get_blacklisted_enemies(enemy_randomization_blacklist)
+        allowed = [candidate for candidate in _CANDIDATES if candidate not in blacklisted]
+        return {c: _pick_allowed(rng, reroll_rng, blacklisted, allowed) for c in sorted(ACE_ADDRS)}
     return {c: SIGNATURE_BORGS[c] for c in SIGNATURE_BORGS}
+
+
+def _pick_allowed(
+    rng: random.Random, reroll_rng: random.Random, blacklisted: frozenset[int], allowed: list[int]
+) -> int:
+    pick = rng.choice(_CANDIDATES)
+    if pick in blacklisted:
+        pick = reroll_rng.choice(allowed)
+    return pick
 
 
 def _partner_regulars(rng: random.Random, borgs_mode: int, regular: list[int]) -> list[int]:
@@ -283,69 +306,107 @@ def pack_can_fuse(plan: EnemyPlan, cell: int) -> bool:
     )
 
 
-def plan_enemies(seed: int, mode: int, ace_mode: int = SPECIAL_VANILLA, boss_mode: int = SPECIAL_VANILLA) -> EnemyPlan:
-    plan = EnemyPlan(assignments=dict(_assign_enemies(seed, mode, ace_mode, boss_mode)))
+def plan_enemies(
+    seed: int,
+    mode: int,
+    enemy_randomization_blacklist: Iterable[str],
+    ace_mode: int = SPECIAL_VANILLA,
+    boss_mode: int = SPECIAL_VANILLA,
+) -> EnemyPlan:
+    plan = EnemyPlan(assignments=dict(_assign_enemies(seed, mode, enemy_randomization_blacklist, ace_mode, boss_mode)))
     if mode == MODE_VANILLA:
         return plan
     rng_boss = _stream(seed, _SALT_BOSS)
     rng_escort = _stream(seed, _SALT_ESCORT)
     cells = sorted(BOSS_ADDRS) + sorted(PACK_LEADER_CELLS)
-    ids = _boss_ids(rng_boss, boss_mode, cells)
+    ids = _boss_ids(rng_boss, boss_mode, cells, enemy_randomization_blacklist)
     if ids is not None:
         for cell in cells:
             plan.assignments.pop(cell, None)
         for cell, new_id in zip(cells, ids, strict=True):
-            _place_boss(plan, rng_escort, mode, cell, new_id)
+            _place_boss(plan, rng_escort, enemy_randomization_blacklist, mode, cell, new_id)
     _relocate_pairs(plan)
     _place_enemy_heights(plan)
     return plan
 
 
+def get_blacklisted_enemies(blacklist: Iterable[str]) -> frozenset[int]:
+    blacklisted_ids: list[int] = []
+    for blacklisted in blacklist:
+        blacklisted_casefold = blacklisted.casefold()
+        if blacklisted_casefold.startswith("_"):
+            blacklisted_tribe = blacklisted_casefold[1:]
+            blacklisted_ids.extend(
+                [borg_id for borg_id, tribe in TRIBES.items() if tribe.casefold() == blacklisted_tribe]
+            )
+        else:
+            blacklisted_ids.append(_IDS_BY_NAME[blacklisted_casefold])
+    return frozenset(blacklisted_ids)
+
+
 def _assign_enemies(
-    seed: int, mode: int, ace_mode: int = SPECIAL_VANILLA, boss_mode: int = SPECIAL_VANILLA
+    seed: int,
+    mode: int,
+    enemy_randomization_blacklist: Iterable[str],
+    ace_mode: int = SPECIAL_VANILLA,
+    boss_mode: int = SPECIAL_VANILLA,
 ) -> dict[int, int]:
-    out = _generic_pass(seed, mode)
+    out = _generic_pass(seed, mode, enemy_randomization_blacklist)
     if mode == MODE_VANILLA:
         return out
-    out.update(_ace_writes(seed, ace_mode))
-    out.update(_boss_writes(seed, boss_mode))
+    out.update(_ace_writes(seed, ace_mode, enemy_randomization_blacklist))
+    out.update(_boss_writes(seed, boss_mode, enemy_randomization_blacklist))
     return out
 
 
-def _generic_pass(seed: int, mode: int) -> dict[int, int]:
+def _generic_pass(seed: int, mode: int, enemy_randomization_blacklist: Iterable[str]) -> dict[int, int]:
     rng = random.Random(seed)
     out: dict[int, int] = {}
     for chapter in sorted(SPAWNS):
         randomized = chapter not in PROTECTED_CHAPTERS and mode != MODE_VANILLA
         for spawn in SPAWNS[chapter]:
             if spawn.borg is None:
-                out[spawn.cell] = _pinned_random_spawn(rng, spawn.choices, mode, randomized)
+                out[spawn.cell] = _pinned_random_spawn(
+                    rng, spawn.choices, mode, randomized, enemy_randomization_blacklist
+                )
             elif randomized and _in_generic_pass(spawn.cell, spawn.borg):
-                new_id = _mode_pick(rng, mode, SPAWN_COSTS.get(spawn.borg, 0), None)
+                new_id = _mode_pick(rng, mode, SPAWN_COSTS.get(spawn.borg, 0), None, enemy_randomization_blacklist)
                 if new_id is not None:
                     out[spawn.cell] = new_id
     return out
 
 
-def _pinned_random_spawn(rng: random.Random, options: Sequence[int], mode: int, randomized: bool) -> int:
+def _pinned_random_spawn(
+    rng: random.Random,
+    options: Sequence[int],
+    mode: int,
+    randomized: bool,
+    enemy_randomization_blacklist: Iterable[str],
+) -> int:
     choice = rng.choice(options)
     if not randomized:
         return choice
-    new_id = _mode_pick(rng, mode, SPAWN_COSTS.get(choice, 0), None)
+    new_id = _mode_pick(rng, mode, SPAWN_COSTS.get(choice, 0), None, enemy_randomization_blacklist)
     return choice if new_id is None else new_id
 
 
-def _mode_pick(rng: random.Random, mode: int, base_cost: int, fallback: int | None) -> int | None:
+def _mode_pick(
+    rng: random.Random, mode: int, base_cost: int, fallback: int | None, enemy_randomization_blacklist: Iterable[str]
+) -> int | None:
     if mode == MODE_CHAOS:
-        return rng.choice(_CANDIDATES)
-    new_id = _balanced_pick(rng, base_cost)
+        blacklisted = get_blacklisted_enemies(enemy_randomization_blacklist)
+        candidates = [candidate for candidate in _CANDIDATES if candidate not in blacklisted]
+        return rng.choice(candidates) if candidates else fallback
+    new_id = _balanced_pick(rng, base_cost, enemy_randomization_blacklist)
     return fallback if new_id is None else new_id
 
 
-def _balanced_pick(rng: random.Random, base_cost: int) -> int | None:
+def _balanced_pick(rng: random.Random, base_cost: int, enemy_randomization_blacklist: Iterable[str]) -> int | None:
     low = max(MIN_BALANCED_COST, base_cost // BALANCED_COST_FACTOR)
     high = base_cost * BALANCED_COST_FACTOR
-    pool = [b for b in _CANDIDATES if low <= COSTS[b] <= high]
+    blacklisted = get_blacklisted_enemies(enemy_randomization_blacklist)
+    candidates = [candidate for candidate in _CANDIDATES if candidate not in blacklisted]
+    pool = [b for b in candidates if low <= COSTS[b] <= high]
     if not pool:
         return None
     return rng.choice(pool)
@@ -355,21 +416,23 @@ def _in_generic_pass(addr: int, borg_id: int) -> bool:
     return addr not in _SPECIAL_CELLS and (borg_id in BORGS or borg_id in ALT_FORMS)
 
 
-def _ace_writes(seed: int, ace_mode: int) -> dict[int, int]:
+def _ace_writes(seed: int, ace_mode: int, enemy_randomization_blacklist: Iterable[str]) -> dict[int, int]:
     out: dict[int, int] = {}
-    for commander, new_id in _ace_permutation(seed, ace_mode).items():
+    for commander, new_id in _ace_permutation(seed, ace_mode, False, enemy_randomization_blacklist).items():
         if new_id != SIGNATURE_BORGS[commander] and commander in ACE_ADDRS:
             for addr in ACE_ADDRS[commander]:
                 out[addr] = new_id
     return out
 
 
-def _boss_writes(seed: int, boss_mode: int) -> dict[int, int]:
+def _boss_writes(seed: int, boss_mode: int, enemy_randomization_blacklist: Iterable[str]) -> dict[int, int]:
     rng_boss = _stream(seed, _SALT_BOSS)
     out: dict[int, int] = {}
     if boss_mode == BOSS_VANILLA:
         return out
-    pool = BOSS_IDS if boss_mode == BOSS_ROSTER else _CANDIDATES
+    blacklisted = get_blacklisted_enemies(enemy_randomization_blacklist)
+    candidates = [candidate for candidate in _CANDIDATES if candidate not in blacklisted]
+    pool = BOSS_IDS if boss_mode == BOSS_ROSTER else candidates
     for addr in sorted(BOSS_ADDRS):
         new_id = rng_boss.choice(pool)
         if new_id != BOSS_ADDRS[addr]:
@@ -377,10 +440,14 @@ def _boss_writes(seed: int, boss_mode: int) -> dict[int, int]:
     return out
 
 
-def _boss_ids(rng_boss: random.Random, boss_mode: int, cells: list[int]) -> list[int] | None:
+def _boss_ids(
+    rng_boss: random.Random, boss_mode: int, cells: list[int], enemy_randomization_blacklist: Iterable[str]
+) -> list[int] | None:
     if boss_mode == BOSS_VANILLA:
         return None
-    singles = BOSS_IDS if boss_mode == BOSS_ROSTER else _CANDIDATES
+    blacklisted = get_blacklisted_enemies(enemy_randomization_blacklist)
+    candidates = tuple(candidate for candidate in _CANDIDATES if candidate not in blacklisted)
+    singles = BOSS_IDS if boss_mode == BOSS_ROSTER else candidates
     return [rng_boss.choice(singles + PACK_KINDS if cell in _PACK_ELIGIBLE else singles) for cell in cells]
 
 
@@ -393,13 +460,20 @@ _PACK_ELIGIBLE: frozenset[int] = frozenset(PACK_LEADER_CELLS) | frozenset(
 )
 
 
-def _place_boss(plan: EnemyPlan, rng_escort: random.Random, mode: int, cell: int, new_id: int) -> None:
+def _place_boss(
+    plan: EnemyPlan,
+    rng_escort: random.Random,
+    enemy_randomization_blacklist: Iterable[str],
+    mode: int,
+    cell: int,
+    new_id: int,
+) -> None:
     escort_cells = PACK_ESCORT_CELLS.get(cell, ())
     if new_id in PACK_KINDS:
         free_cells = _place_pack(plan, cell, new_id, escort_cells)
     else:
         free_cells = _place_single_boss(plan, cell, new_id, escort_cells)
-    _randomize_free_escorts(plan, rng_escort, mode, free_cells)
+    _randomize_free_escorts(plan, rng_escort, mode, free_cells, enemy_randomization_blacklist)
 
 
 def _place_pack(plan: EnemyPlan, cell: int, kind: int, escort_cells: tuple[int, ...]) -> tuple[int, ...]:
@@ -458,19 +532,27 @@ def _place_single_boss(plan: EnemyPlan, cell: int, borg_id: int, escort_cells: t
     return escort_cells
 
 
-def _randomize_free_escorts(plan: EnemyPlan, rng_escort: random.Random, mode: int, cells: tuple[int, ...]) -> None:
+def _randomize_free_escorts(
+    plan: EnemyPlan,
+    rng_escort: random.Random,
+    mode: int,
+    cells: tuple[int, ...],
+    enemy_randomization_blacklist: Iterable[str],
+) -> None:
     for escort_cell in cells:
-        pick = _generic_pick(rng_escort, mode, escort_cell)
+        pick = _generic_pick(rng_escort, mode, escort_cell, enemy_randomization_blacklist)
         if pick is not None and pick != _VANILLA_ID.get(escort_cell):
             plan.assignments[escort_cell] = pick
 
 
-def _generic_pick(rng: random.Random, mode: int, addr: int) -> int | None:
+def _generic_pick(rng: random.Random, mode: int, addr: int, enemy_randomization_blacklist: Iterable[str]) -> int | None:
     if mode == MODE_CHAOS:
-        return rng.choice(_CANDIDATES)
+        blacklisted = get_blacklisted_enemies(enemy_randomization_blacklist)
+        candidates = [candidate for candidate in _CANDIDATES if candidate not in blacklisted]
+        return rng.choice(candidates)
     vanilla = _VANILLA_ID.get(addr)
     cost = SPAWN_COSTS.get(vanilla, 0) if vanilla is not None else 0
-    return _balanced_pick(rng, cost)
+    return _balanced_pick(rng, cost, enemy_randomization_blacklist)
 
 
 def _relocate_pairs(plan: EnemyPlan) -> None:

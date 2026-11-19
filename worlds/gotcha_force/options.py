@@ -13,6 +13,7 @@ from Options import (
     Toggle,
 )
 
+from .data.borgs import NAMES, RANDOMIZABLE
 from .data.chapters import CHAPTERS, TUTORIAL_CHAPTER, VARIANT_PAIRS
 from .logic.achievements import (
     ALL_TYPES,
@@ -38,6 +39,7 @@ from .logic.enemies import (
     STAT_PROGRESSIVE,
     STAT_RANDOM,
     STAT_VANILLA,
+    get_blacklisted_enemies,
 )
 from .logic.progression import (
     GOAL_COSMIC_DRAGON,
@@ -51,6 +53,9 @@ from .logic.progression import (
 )
 
 UNLIMITED_RATIO = float("inf")
+
+BORG_NAMES = [name.casefold() for name in NAMES.values()]
+TRIBE_KEYS = ["_" + tribe.casefold() for tribe in TRIBE_ORDER]
 
 
 class Goal(Choice):
@@ -402,6 +407,14 @@ class EnemyRandomization(Choice):
     default = option_balanced
 
 
+class EnemyRandomizationBlacklist(OptionSet):
+    """Prevents listed borgs from appearing in battles when Enemy Randomization is on."""
+
+    display_name = "Enemy Randomization Blacklist"
+    valid_keys_casefold = True
+    valid_keys = TRIBE_KEYS + BORG_NAMES
+
+
 class CommanderAceBorgs(Choice):
     """What happens to each rival commander's signature borg (for
     example Kakeru's Sasuke). Only used when Enemy Randomization is
@@ -580,6 +593,7 @@ class GotchaForceOptions(PerGameCommonOptions):
     gf_logic_difficulty: GFLogicDifficulty
     starting_borg: StartingBorg
     enemy_randomization: EnemyRandomization
+    enemy_randomization_blacklist: EnemyRandomizationBlacklist
     commander_ace_borgs: CommanderAceBorgs
     boss_borgs: BossBorgs
     partner_borgs: PartnerBorgs
@@ -629,6 +643,7 @@ OPTION_GROUPS = [
             GFLogicDifficulty,
             StartingBorg,
             EnemyRandomization,
+            EnemyRandomizationBlacklist,
             CommanderAceBorgs,
             BossBorgs,
             PartnerBorgs,
@@ -665,6 +680,7 @@ def validate_options(options: GotchaForceOptions, player_name: str) -> None:
     _validate_achievement_types(options, player_name)
     _validate_range("enemy_ai", options.enemy_ai_minimum, options.enemy_ai_maximum, player_name)
     _validate_range("enemy_level", options.enemy_level_minimum, options.enemy_level_maximum, player_name)
+    _validate_blacklist(options, player_name)
 
 
 def _validate_crystals(options: GotchaForceOptions, player_name: str) -> None:
@@ -740,3 +756,11 @@ def _validate_range(name: str, minimum: Range, maximum: Range, player_name: str)
         raise OptionError(
             f"{player_name}: {name}_minimum ({minimum.value}) cannot exceed {name}_maximum ({maximum.value})"
         )
+
+
+def _validate_blacklist(options: GotchaForceOptions, player_name: str) -> None:
+    candidates = [
+        borg for borg in RANDOMIZABLE if borg not in get_blacklisted_enemies(options.enemy_randomization_blacklist)
+    ]
+    if not candidates:
+        raise OptionError(f"{player_name}: Blacklist can't be all the borg list")

@@ -68,6 +68,7 @@ OPTIONS_IN_SLOT = (
     slot_keys.ENEMY_LEVELS,
     slot_keys.ENEMY_LEVEL_MINIMUM,
     slot_keys.ENEMY_LEVEL_MAXIMUM,
+    slot_keys.ENEMY_RANDOMIZATION_BLACKLIST,
 )
 
 TrackerSlot = dict | None
@@ -167,7 +168,11 @@ class GotchaForceWorld(World):
         else:
             self.enemy_seed = self.random.getrandbits(ENEMY_SEED_BITS)
         self.enemy_plan = enemies.plan_enemies(
-            self.enemy_seed, opts.enemy_randomization.value, opts.commander_ace_borgs.value, opts.boss_borgs.value
+            self.enemy_seed,
+            opts.enemy_randomization.value,
+            opts.enemy_randomization_blacklist,
+            opts.commander_ace_borgs.value,
+            opts.boss_borgs.value,
         )
         self.enemy_assignments = self.enemy_plan.assignments
         self.chapter_costs = enemies.chapter_costs(self.enemy_assignments, self.enemy_plan.inserts)

@@ -93,6 +93,7 @@ SLOT_DEFAULTS: dict[str, Any] = {
     slot_keys.ENEMY_LEVELS: STAT_VANILLA,
     slot_keys.ENEMY_LEVEL_MINIMUM: EnemyLevelMinimum.default,
     slot_keys.ENEMY_LEVEL_MAXIMUM: EnemyLevelMaximum.default,
+    slot_keys.ENEMY_RANDOMIZATION_BLACKLIST: (),
 }
 
 FORCE_MAX = GF_CAP_STEPS[-1]

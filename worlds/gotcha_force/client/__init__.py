@@ -172,6 +172,7 @@ class GotchaForceContext(CommonContext):
         plan = enemies.plan_enemies(
             client_logic.slot_value(slot, slot_keys.ENEMY_SEED),
             client_logic.slot_value(slot, slot_keys.ENEMY_RANDOMIZATION),
+            client_logic.slot_value(slot, slot_keys.ENEMY_RANDOMIZATION_BLACKLIST),
             client_logic.slot_value(slot, slot_keys.COMMANDER_ACE_BORGS),
             client_logic.slot_value(slot, slot_keys.BOSS_BORGS),
         )
@@ -186,6 +187,7 @@ class GotchaForceContext(CommonContext):
             enemies.assign_partners(
                 client_logic.slot_value(slot, slot_keys.ENEMY_SEED),
                 client_logic.slot_value(slot, slot_keys.PARTNER_BORGS),
+                client_logic.slot_value(slot, slot_keys.ENEMY_RANDOMIZATION_BLACKLIST),
                 client_logic.slot_value(slot, slot_keys.PARTNER_ACE_BORGS),
             )
         )
