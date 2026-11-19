@@ -409,12 +409,18 @@ class EnemyRandomization(Choice):
 
 class EnemyRandomizationBlacklist(OptionSet):
     """Prevents listed borgs from appearing in battles when Enemy Randomization is on.
-    It only takes effect if Enemy Randomization is on "Chaos" or "Balanced".
 
-    For enemy Commanders, it only applies the blacklist if the randomization mode is "Full Random".
-    For Bosses, it only applies if the randomization mode is "Full Random".
+    For Commander Ace Borgs, it only applies the blacklist if the randomization mode is full_random.
+    For Boss Borgs, it only applies if the randomization mode is full_random.
 
     This blacklist does not affect borgs for your partners
+    It allows blacklisting a full tribe following the format _tribe
+
+    List of tribe keys:
+    ['_air', '_angel', '_bug', '_death', '_demon', '_dragon', '_fortress', '_girl', '_gun', '_hero',
+    '_idol', '_knight', '_knuckle', '_machine', '_musha', '_ninja', '_nurse', '_tank', '_wing', '_wizard']
+
+    Example: ['Death ICBM', '_dragon']
     """
 
     display_name = "Enemy Randomization Blacklist"
