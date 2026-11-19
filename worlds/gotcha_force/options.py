@@ -759,8 +759,7 @@ def _validate_range(name: str, minimum: Range, maximum: Range, player_name: str)
 
 
 def _validate_blacklist(options: GotchaForceOptions, player_name: str) -> None:
-    candidates = [
-        borg for borg in RANDOMIZABLE if borg not in get_blacklisted_enemies(options.enemy_randomization_blacklist)
-    ]
+    blacklisted = get_blacklisted_enemies(options.enemy_randomization_blacklist)
+    candidates = [borg for borg in RANDOMIZABLE if borg not in blacklisted]
     if not candidates:
-        raise OptionError(f"{player_name}: Blacklist can't be all the borg list")
+        raise OptionError(f"{player_name}: enemy_randomization_blacklist leaves no borg to randomize")
