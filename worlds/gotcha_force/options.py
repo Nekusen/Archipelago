@@ -413,8 +413,8 @@ class EnemyRandomizationBlacklist(OptionSet):
     For Commander Ace Borgs, it only applies the blacklist if the randomization mode is full_random.
     For Boss Borgs, it only applies if the randomization mode is full_random.
 
-    This blacklist does not affect borgs for your partners
-    It allows blacklisting a full tribe following the format _tribe
+    This blacklist does not affect borgs for your partners.
+    It allows blacklisting borg names, or a whole tribe as _tribe
 
     List of tribe keys:
     ['_air', '_angel', '_bug', '_death', '_demon', '_dragon', '_fortress', '_girl', '_gun', '_hero',
