@@ -171,7 +171,7 @@ class CollectionStage(Stage):
 
     def _apply_xp(self, save: int, ids: list[int], ap_state: client_logic.ApState) -> None:
         ctx = self.ctx
-        key = f"{ctx.seed_name}_{ctx.slot}" if ctx.seed_name else None
+        key = f"{ctx.server_seed_name}_{ctx.slot}" if ctx.server_seed_name else None
         if key is None or ap_state.xp_items <= 0:
             return
         applied = state.client_state_get(key, XP_STATE_FIELD, 0)
