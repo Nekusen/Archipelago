@@ -189,7 +189,7 @@ def slot_value(slot: SlotData, key: str) -> Any:
 
 
 def is_empty_entry(borg_id: int) -> bool:
-    return borg_id in (NO_ID, 0)
+    return borg_id == NO_ID
 
 
 def borg_name(borg_id: int) -> str:

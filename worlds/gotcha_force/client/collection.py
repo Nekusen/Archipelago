@@ -41,8 +41,7 @@ class CollectionStage(Stage):
         if block is None:
             return
         ids = self._collection_ids(block)
-        starting = client_logic.slot_value(slot, slot_keys.STARTING_BORG)
-        borg_count = self._reset_new_game_collection(save, ids, borg_count, starting)
+        self._replace_new_game_g_red(save, ids, borg_count, client_logic.slot_value(slot, slot_keys.STARTING_BORG))
         desired = client_logic.desired_borgs(ap_state, client_logic.slot_value(slot, slot_keys.BOX_BORGS) or ())
         self._upgrade_to_neo_g_red(save, ids, desired)
         self._add_missing_borgs(save, block, ids, borg_count, [b for b in sorted(desired) if b not in ids])
@@ -58,26 +57,14 @@ class CollectionStage(Stage):
         ]
 
     def _replace_new_game_g_red(self, save: int, ids: list[int], borg_count: int, starting: int) -> None:
-        if starting != G_RED and borg_count >= 1 and ids[addresses.NEW_GAME_ENTRY] == G_RED:
+        if (
+            starting != G_RED
+            and borg_count == len(NEW_GAME_COLLECTION)
+            and ids[addresses.NEW_GAME_ENTRY] == G_RED
+            and tuple(ids[:borg_count]) == NEW_GAME_COLLECTION
+        ):
             self.dolphin.write_u16(save + addresses.SAVE_COLLECTION, starting)
             ids[addresses.NEW_GAME_ENTRY] = starting
-
-    def _reset_new_game_collection(self, save: int, ids: list[int], borg_count: int, starting: int) -> int:
-        if borg_count != len(NEW_GAME_COLLECTION) or tuple(ids[:borg_count]) != NEW_GAME_COLLECTION:
-            return borg_count
-        collection = save + addresses.SAVE_COLLECTION
-        empty_entry = self.dolphin.read(
-            collection + addresses.COLLECTION_ENTRY * borg_count, addresses.COLLECTION_ENTRY
-        )
-        if empty_entry is None:
-            return borg_count
-        self.dolphin.write_u16(collection, starting)
-        ids[addresses.NEW_GAME_ENTRY] = starting
-        for entry in range(1, borg_count):
-            self.dolphin.write(collection + addresses.COLLECTION_ENTRY * entry, empty_entry)
-            ids[entry] = addresses.NO_ID
-        self.dolphin.write_u16(save + addresses.SAVE_N_BORGS, 1)
-        return 1
 
     def _upgrade_to_neo_g_red(self, save: int, ids: list[int], desired: set[int]) -> None:
         if NEO_G_RED not in desired or NEO_G_RED in ids or G_RED not in ids:
