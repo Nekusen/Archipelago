@@ -12,7 +12,7 @@ from . import logic as client_logic
 from . import state
 from .stage import Stage
 
-XP_PER_ITEM: Final = 250
+XP_PER_ITEM: Final = 10
 
 XP_STATE_FIELD: Final = "xp"
 
