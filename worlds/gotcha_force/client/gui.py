@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Final
 
 from CommonClient import logger
 
+from ..locations import GACHA_PREFIX
 from . import tracker
 from .tracker import (
     GO_MODE_GREEN,
@@ -277,14 +278,24 @@ def build_manager(ctx: GotchaForceContext, ui: type[GameManager]) -> type[GameMa
         ) -> None:
             from kivy.uix.treeview import TreeViewLabel
 
-            chapter_node = tree.add_node(
-                TreeViewLabel(text=_row_text(row, recruited), color=ROW_CHAPTER_COLORS[row.state]), zone_node
+            some_check_is_hinted = any(name.removesuffix(tracker.OUT_OF_LOGIC_MARK) in hinted for name in row.names)
+            base_chapter_color = ROW_CHAPTER_COLORS[row.state]
+            chapter_color = (
+                [*HINTED_COLOR[:3], min(base_chapter_color[3] * 1.5, 1)] if some_check_is_hinted else base_chapter_color
+            )
+            chapter_node = tree.add_node(TreeViewLabel(text=_row_text(row, recruited), color=chapter_color), zone_node)
+
+            some_gacha_is_hinted = any(
+                name.startswith(GACHA_PREFIX) and name.removesuffix(tracker.OUT_OF_LOGIC_MARK) in hinted
+                for name in row.names
             )
             names = row.names if spoilers else tracker.hide_gacha_spoilers(row.names)
-            for name in names:
-                is_hinted = name.removesuffix(tracker.OUT_OF_LOGIC_MARK) in hinted
+            for i, name in enumerate(names, start=1):
+                is_hinted = name.removesuffix(tracker.OUT_OF_LOGIC_MARK) in hinted or (
+                    some_gacha_is_hinted and not spoilers and i == len(names)
+                )
                 base = ROW_CHECK_COLORS[row.state]
-                color = [*HINTED_COLOR[:3], base[3]] if is_hinted else base
+                color = [*HINTED_COLOR[:3], min(base[3] * 1.5, 1)] if is_hinted else base
                 tree.add_node(TreeViewLabel(text=name, color=color), chapter_node)
 
     return GotchaForceManager
