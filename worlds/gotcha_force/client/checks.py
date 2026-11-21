@@ -100,6 +100,14 @@ class CheckStage(Stage):
         specs = ctx.achievement_specs
         if not specs:
             return
+        progress = self.dolphin.read_u32(addresses.G_PROGRESS_PTR)
+        if progress is None:
+            self._prev_victories = None
+            return
+        chapter = self.dolphin.read_u32(progress + addresses.OFF_CURRENT_CHAPTER)
+        if chapter is None or not (0 < chapter < addresses.N_CHAPTERS):
+            self._prev_victories = None
+            return
         prev, self._prev_victories = self._prev_victories, dict(victories)
         if prev is None:
             return
@@ -231,6 +239,10 @@ class CheckStage(Stage):
     def _detect_prize(self, progress: int) -> None:
         whole_count = self.dolphin.read_u32(progress + addresses.OFF_GACHA_WHOLE_COUNT) or 0
         piece_count = self.dolphin.read_u32(progress + addresses.OFF_GACHA_PIECE_COUNT) or 0
+        chapter = self.dolphin.read_u32(progress + addresses.OFF_CURRENT_CHAPTER)
+        if chapter is None or not (0 < chapter < addresses.N_CHAPTERS):
+            self._gacha_prev = None
+            return
         total = whole_count + piece_count
         if self._gacha_prev is None:
             self._gacha_prev = total

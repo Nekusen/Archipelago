@@ -106,6 +106,8 @@ OBTAINED_VIA_GACHA: Final = 1
 NEW_GAME_ENTRY: Final = 0          # the collection entry a new game creates, G Red
 SAVE_N_FORCES: Final = 0x2170      # u16: saved forces
 SAVE_N_BORGS: Final = 0x2172       # u16: borgs in the collection
+SAVE_AP_XP_COUNT: Final = 0x218E   # u16: Borg Experience items applied to this save;
+                                   # padding after the 12-char player name, zeroed on a new game
 
 BOX2_OVERFLOW: Final = 0x0000      # 2000 overflow entries, u16 id at +0
 OVERFLOW_SLOTS: Final = 2000

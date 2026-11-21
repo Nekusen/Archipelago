@@ -46,6 +46,11 @@ class Guardian(CollectionStage, CheckStage):
         self._patch_status = None
         self._grant_patch = None
         self._credit_patch = None
+        self._gacha_saved_count = None
+        self._gacha_prev = None
+        self._prev_victories = None
+        self._battle_snapshot = None
+        self._battle_result = None
 
     def tick(self) -> dict[int, int] | None:
         ctx = self.ctx
