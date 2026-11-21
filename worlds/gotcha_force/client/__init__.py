@@ -311,6 +311,11 @@ async def _hook_dolphin(ctx: GotchaForceContext, hook_warned: bool) -> bool:
 
 async def _find_game(ctx: GotchaForceContext, guardian: Guardian, hook_warned: bool) -> bool:
     game_id = ctx.dolphin.read(addresses.GAME_ID_ADDR, len(addresses.GAME_ID))
+    if game_id is None:
+        ctx.dolphin.disconnect()
+        ctx.game_valid = False
+        logger.info("Lost connection to Dolphin. Waiting...")
+        return False
     if game_id != addresses.GAME_ID:
         if ctx.game_valid or not hook_warned:
             logger.info(f"The loaded game is not GG4E08 ({game_id!r}). Waiting...")
