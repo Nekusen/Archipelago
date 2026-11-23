@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 import struct
 from typing import Final
 
@@ -63,6 +64,10 @@ class CollectionStage(Stage):
             and tuple(ids[:borg_count]) == NEW_GAME_COLLECTION
         ):
             self.dolphin.write_u16(save + addresses.SAVE_COLLECTION, starting)
+            self.dolphin.write(
+                save + addresses.SAVE_COLLECTION + addresses.COLLECTION_COLOR_OFF,
+                bytes([random.randrange(addresses.BORG_COLOR_COUNT)]),
+            )
             ids[addresses.NEW_GAME_ENTRY] = starting
 
     def _upgrade_to_neo_g_red(self, save: int, ids: list[int], desired: set[int]) -> None:
@@ -71,7 +76,10 @@ class CollectionStage(Stage):
         entry = ids.index(G_RED)
         offset = save + addresses.SAVE_COLLECTION + addresses.COLLECTION_ENTRY * entry
         self.dolphin.write_u16(offset, NEO_G_RED)
-        self.dolphin.write(offset + addresses.COLLECTION_LEVELS_OFF, bytes(addresses.COLLECTION_LEVELS_LEN))
+        self.dolphin.write(
+            offset + addresses.COLLECTION_COLOR_OFF, bytes([random.randrange(addresses.BORG_COLOR_COUNT)])
+        )
+        self.dolphin.write(offset + addresses.COLLECTION_LEVEL_OFF, bytes([addresses.COLLECTION_INITIAL_LEVEL]))
         self.dolphin.write_u32(offset + addresses.COLLECTION_EXP_OFF, 0)
         ids[entry] = NEO_G_RED
 
@@ -86,7 +94,12 @@ class CollectionStage(Stage):
                 free_slot = borg_count
             offset = save + addresses.SAVE_COLLECTION + addresses.COLLECTION_ENTRY * free_slot
             head = COLLECTION_ENTRY_HEAD.pack(
-                borg, addresses.COLLECTION_INITIAL_LEVEL, 0, self._next_serial(block), 0, 0
+                borg,
+                random.randrange(addresses.BORG_COLOR_COUNT),
+                addresses.COLLECTION_INITIAL_LEVEL,
+                self._next_serial(block),
+                0,
+                0,
             )
             self.dolphin.write(offset, head + bytes(addresses.COLLECTION_ENTRY - len(head)))
             self.dolphin.write(offset + addresses.COLLECTION_GACHA_FLAG_OFF, bytes([addresses.OBTAINED_VIA_GACHA]))
